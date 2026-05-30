@@ -5,7 +5,7 @@ services:
     container_name: abis_db
     restart: unless-stopped
 
-    enviroment:
+    environment:
       POSTGRES_DB: ${POSTGRES_DB:-abisdb}
       POSTGRES_USER: ${POSTGRES_USER:-abisuser}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-abispassword}
@@ -40,7 +40,7 @@ services:
       dockerfile: Dockerfile
 
     container_name: abis_web
-    restart: unless_stop
+    restart: unless-stopped
     command: python manage.py runserver 0.0.0.0:8000
 
     volumes:
@@ -65,7 +65,7 @@ services:
       dockerfile: Dockerfile
 
     container_name: abis_celery
-    restart: unless_stop
+    restart: unless-stopped
     command: celery -A config worker -l info
     volumes:
       - .:/app
@@ -86,7 +86,7 @@ services:
       dockerfile: Dockerfile
 
     container_name: abis_celery_beat
-    restart: unless_stop
+    restart: unless-stopped
     volumes:
       - .:/app
 

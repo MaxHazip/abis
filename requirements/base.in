@@ -1,0 +1,9 @@
+django
+psycopg2
+Pillow
+django-redis
+celery
+dj-database-url
+django-environ
+django-celery-results
+django-vite

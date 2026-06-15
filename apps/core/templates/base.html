@@ -1,7 +1,6 @@
-<!DOCTYPE html>
 {% load django_vite %}
 {% load static %}
-{% load django_vite static %}
+<!DOCTYPE html>
 <html lang="en">
 <head>
     {% if debug %}
@@ -12,9 +11,24 @@
     <script src="//unpkg.com/alpinejs" defer></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>{{ site_settings.site_name }}</title>
+    <meta name="description" content="{{ site_settings.seo_description }}">
 </head>
 <body>
+    <header class="main_header">
+        <div class="container header_container">
+            {% include 'includes/header.html' with site_settings=site_settings%}
+        </div>    
+        {% include 'includes/slider.html' with slider=slider %}
+    </header>
+    <main>
+        {% include 'includes/product_groups.html' with product_groups=product_group%}
+        {% comment %} <div id="feedbackContainer">
+            {% include 'includes/feedback_form_partial.html' with form=form %}
+        </div> {% endcomment %}
+    </main>
+    <footer>
 
+    </footer>
 </body>
 </html>

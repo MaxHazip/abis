@@ -48,6 +48,8 @@ INSTALLED_APPS = [
     'django_celery_results',
     'django_vite',
     'apps.core',
+    'easy_thumbnails',
+    'solo'
 ]
 
 MIDDLEWARE = [
@@ -65,7 +67,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -90,22 +92,18 @@ DATABASES = {
 
 CACHES = {
     'default': {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": env("REDIS_URL"),
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient"
-        }
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
     }
 }
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 SESSION_CACHE_ALIAS = 'default'
 
-broker_url = env("CELERY_URL")
-result_backend = 'django-db'
-CELERY_broker_connection_retry_on_startup = True
-accept_content = ['json']
-task_serializer = 'json'
+# broker_url = env("CELERY_URL")
+# result_backend = 'django-db'
+# CELERY_broker_connection_retry_on_startup = True
+# accept_content = ['json']
+# task_serializer = 'json'
 
 
 
@@ -146,6 +144,9 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 
+MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = "/media/"
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
@@ -154,10 +155,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 DJANGO_VITE = {
     'default': {
-        'dev_mode': True,
+        'dev_mode': DEBUG,
         'dev_server_host': 'localhost',
         'dev_server_port': 5173,
-        # 'static_url_prefix': 'dist/',
-        'manifest_path': BASE_DIR / 'static' / 'dist' / 'manifest.json', # или '.vite/manifest.json' в зависимости от вашей версии Vite
+        'manifest_path': BASE_DIR / 'static' / 'dist' / '.vite' / 'manifest.json',
     }
 }

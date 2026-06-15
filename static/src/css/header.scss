@@ -1,0 +1,24 @@
+@use 'fonts';
+
+.header_nav{ 
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+}
+
+.main_nav_list {
+
+    display: flex;
+    width: 75%;
+    justify-content: space-between;
+    align-items: center;
+    color: black;
+    mix-blend-mode: difference;
+    font-family: 'Inter';
+    font-size: 1.43rem;
+    font-weight: 600;
+    
+
+}

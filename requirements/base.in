@@ -7,3 +7,8 @@ dj-database-url
 django-environ
 django-celery-results
 django-vite
+django-simple-history
+django-ckeditor
+django-admin-sortable2
+easy-thumbnails
+django-solo

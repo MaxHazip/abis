@@ -1,0 +1,13 @@
+<form 
+    id="feedbackForm"
+    hx-post="{% url 'feedback' %}"
+    hx-target="#feedbackForm"
+    hx-swap="outerHTML"    
+>
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit">
+</form>
+<div class="alert alert-success">
+    {{ feedback_text }}
+</div>

@@ -1,0 +1,7 @@
+<section class="hero-slider">
+    <div class="slider-wrapper">
+        {% for slide in slider %}
+        <div class="slide" style="background-image:url('{{ slide.image.url }}')"></div>
+        {% endfor %}
+    </div>
+</section>

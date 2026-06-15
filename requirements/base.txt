@@ -32,23 +32,43 @@ django==6.0.5
     # via
     #   -r requirements/base.in
     #   dj-database-url
+    #   django-admin-sortable2
     #   django-celery-results
+    #   django-ckeditor
+    #   django-js-asset
     #   django-redis
+    #   django-simple-history
+    #   django-solo
     #   django-vite
+    #   easy-thumbnails
+django-admin-sortable2==2.3.1
+    # via -r requirements/base.in
 django-celery-results==2.6.0
+    # via -r requirements/base.in
+django-ckeditor==6.7.3
     # via -r requirements/base.in
 django-environ==0.13.0
     # via -r requirements/base.in
+django-js-asset==3.1.2
+    # via django-ckeditor
 django-redis==6.0.0
     # via -r requirements/base.in
+django-simple-history==3.11.0
+    # via -r requirements/base.in
+django-solo==2.5.1
+    # via -r requirements/base.in
 django-vite==3.1.0
+    # via -r requirements/base.in
+easy-thumbnails==2.10.1
     # via -r requirements/base.in
 kombu==5.6.2
     # via celery
 packaging==26.2
     # via kombu
 pillow==12.2.0
-    # via -r requirements/base.in
+    # via
+    #   -r requirements/base.in
+    #   easy-thumbnails
 prompt-toolkit==3.0.52
     # via click-repl
 psycopg2==2.9.12

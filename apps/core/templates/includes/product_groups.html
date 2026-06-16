@@ -1,9 +1,21 @@
-<div class="container product-groups_container">
-    <section class="product-groups">
-        {% for product_group in product_groups %}
-            <div class="product-group_container">
-                
+<section class="container catalog-carousel-section">
+    <div class="catalog">
+        <div class="carousel_container">
+            <button class="carousel-btn prev-btn"></button>
+            <div class="carousel-track-wrapper">
+                <div class="carousel-track">
+                    {% for product_group in product_groups %}
+                        <div class="carousel-card">
+                            <img src="{{ product_group.image.url }}" alt="Изображение продуктовой группы">
+                            <p class"product-group_title">{{ product_group.name }}</p>
+                        </div>
+                    {% endfor %}        
+                </div>
             </div>
-        {% endfor %}
-    </section>
-</div>
+            <button class="carousel-btn next-btn"></button>
+        </div>
+        <div class="carousel-scrollbar-track">
+            <div class="carousel-scrollbar-thumb"></div>
+        </div>
+    </div>
+</section>

@@ -1,13 +1,108 @@
-.product-groups_container {
+.catalog-carousel-section {
 
     padding: 143px 0px 91px 0px;
 
-    .product-groups {
+    .catalog {
 
-        background-color: rgba(229, 122, 29, 1);
-        width: 100%;
-        padding: 60px;
+        background-color: #E57A1D;
         border-radius: 50px;
+        padding: 50px 50px 25px 50px;
+        position: relative;
+        overflow: hidden;
+
+        .carousel_container {
+
+            position: relative;
+            display: flex;
+            align-items: center;
+
+        }
+
+        .carousel-track-wrapper {
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .carousel-track {
+            
+            display: flex;
+            gap: 35px;
+            
+            transition: 0.3s ease-in-out;
+
+            .carousel-card {
+
+                padding: 30px 40px;
+                background-color: white;
+                border-radius: 33px;
+                max-width: 273px;
+                min-width: 273px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                font-weight: 600;
+                justify-content: space-around;
+                    
+            }
+
+        }
+
+    }
+
+    .carousel-btn {
+
+        width: 75px;
+        aspect-ratio: 1/1;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-color: rgba(0, 0, 0, 0.43);
+        border-radius: 100%;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 10;
+
+        &.prev-btn {
+
+            left: -20px;
+            background-image: url("../img/left_arrow.svg");
+
+        }
+
+        &.next-btn {
+
+            right: -20px;
+            background-image: url("../img/right_arrow.svg")
+
+        }
+
+    }
+    
+
+}
+
+.carousel-scrollbar-track {
+
+    width: 330px;
+    height: 3px;
+    background-color: white;
+    margin: 30px auto 0px auto;
+    padding: 0px 10px;
+    border-radius: 10px;
+    position: relative;
+
+    .carousel-scrollbar-thumb {
+
+        position: absolute;
+        width: 21%;
+        height: 100%;
+        background-color: rgba(229, 112, 29, 0.6);
+        border-radius: 10px;
+        transition: transform 0.3s ease-in-out;
+        will-change: transform;
 
     }
 

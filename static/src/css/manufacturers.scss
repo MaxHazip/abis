@@ -1,0 +1,83 @@
+.carusel_manufacturers {
+    padding-bottom: 100px;
+}
+
+.title {
+    color: black;
+    font-size: 25px;
+    margin-bottom: 25px;
+    margin-left: 226px;
+    font-weight: 700;
+}
+
+.logos-slider {
+    overflow: hidden;
+    padding: 40px 0;
+    background: #ffffff; 
+    position: relative;
+    display: flex;
+    width: 100%;
+}
+
+/* Размытие по краям экрана */
+.logos-slider::before,
+.logos-slider::after {
+    position: absolute;
+    top: 0;
+    width: 100px;
+    height: 100%;
+    content: "";
+    z-index: 2;
+    pointer-events: none; /* Чтобы не мешало наведению мыши */
+}
+.logos-slider::before {
+    left: 0;
+    background: linear-gradient(to left, rgba(255,255,255,0), #ffffff);
+}
+.logos-slider::after {
+    right: 0;
+    background: linear-gradient(to right, rgba(255,255,255,0), #ffffff);
+}
+
+/* Движущаяся линия */
+.logos-slide {
+    display: flex;
+    align-items: center;
+    gap: 50px; /* Отступ 50px между логотипами */
+    padding-right: 50px; /* Важный отступ в конце ленты для бесшовности */
+    animation: slide-left 25s linear infinite;
+}
+
+.logos-slide img {
+    height: 60px; /* Высота логотипов */
+    width: auto;
+    object-fit: contain;
+}
+
+/* Пауза при наведении (опционально) */
+.logos-slider:hover .logos-slide {
+    animation-play-state: paused;
+}
+
+.logos-slide a, 
+.logos-slide .logo-no-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease; /* Плавный эффект при наведении */
+}
+
+/* Опционально: легкое увеличение логотипа при наведении мышки */
+.logos-slide a:hover {
+    transform: scale(1.08);
+}
+
+/* Анимация движения влево за экран */
+@keyframes slide-left {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-100%);
+    }
+}

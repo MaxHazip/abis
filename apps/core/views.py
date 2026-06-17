@@ -3,6 +3,7 @@ from django.views.generic import TemplateView
 from . import models
 from django.views.decorators.http import require_POST, require_GET
 from . import forms
+from django.shortcuts import render
 
 
 # Create your views here.
@@ -28,6 +29,16 @@ class MainView(TemplateView):
         context['slider'] = models.HeroSlider.objects.filter(is_active=True)
 
         return context
+    
+    def main_page_view(request):
+    # ... ваш существующий код для слайдеров и групп товаров ...
+        context = {
+            'site_settings': site_settings,
+            'slider': slider,
+            'product_group': product_group,
+            'manufacturers': Manufacturer.objects.exclude(logo=''), # Передаем логотипы
+        }
+        return render(request, 'base.html', context)
 
 @require_POST
 def submit_form(request):

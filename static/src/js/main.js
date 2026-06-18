@@ -2,6 +2,7 @@ import '../css/main.scss';
 import '../css/null.scss';
 import '../css/header.scss'
 import '../css/product_groups.scss'
+import '../css/about.scss'
 import './product_groups_carousel'
 import 'vite/modulepreload-polyfill';
 

@@ -10,10 +10,16 @@ asgiref==3.11.1
     # via django
 billiard==4.2.4
     # via celery
+cairocffi==1.7.1
+    # via cairosvg
+cairosvg==2.9.0
+    # via -r requirements/base.in
 celery==5.6.3
     # via
     #   -r requirements/base.in
     #   django-celery-results
+cffi==2.0.0
+    # via cairocffi
 click==8.4.1
     # via
     #   celery
@@ -26,6 +32,10 @@ click-plugins==1.1.1.2
     # via celery
 click-repl==0.3.0
     # via celery
+cssselect2==0.9.0
+    # via cairosvg
+defusedxml==0.7.1
+    # via cairosvg
 dj-database-url==3.1.2
     # via -r requirements/base.in
 django==5.2.15
@@ -68,11 +78,14 @@ packaging==26.2
 pillow==12.2.0
     # via
     #   -r requirements/base.in
+    #   cairosvg
     #   easy-thumbnails
 prompt-toolkit==3.0.52
     # via click-repl
 psycopg2==2.9.12
     # via -r requirements/base.in
+pycparser==3.0
+    # via cffi
 python-dateutil==2.9.0.post0
     # via celery
 redis==7.4.0
@@ -81,6 +94,10 @@ six==1.17.0
     # via python-dateutil
 sqlparse==0.5.5
     # via django
+tinycss2==1.5.1
+    # via
+    #   cairosvg
+    #   cssselect2
 tzdata==2026.2
     # via kombu
 tzlocal==5.3.1
@@ -92,3 +109,7 @@ vine==5.1.0
     #   kombu
 wcwidth==0.7.0
     # via prompt-toolkit
+webencodings==0.5.1
+    # via
+    #   cssselect2
+    #   tinycss2

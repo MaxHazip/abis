@@ -49,7 +49,7 @@ INSTALLED_APPS = [
     'django_vite',
     'apps.core',
     'easy_thumbnails',
-    'solo'
+    'solo',
 ]
 
 MIDDLEWARE = [

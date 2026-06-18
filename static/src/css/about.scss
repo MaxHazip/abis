@@ -1,0 +1,114 @@
+.about {
+
+    padding: 150px 0px;
+
+}
+
+.about_wrapper {
+
+    display: flex;
+    width: 100%;
+    justify-content: space-around;
+
+}
+
+
+.about_text {
+
+    width: 800px;
+    height: 225px;
+    background-color: #E57A1D;
+    border-radius: 35px;
+    padding: 20px;
+    padding-right: 30px;
+    color: white;
+    font-size: 1.14rem;
+    font-weight: 500;
+    line-height: 1.36rem;
+    margin-bottom: 20px;
+    
+
+    .about_text_paragraph {
+        max-height: 186px;
+        overflow-y: auto;
+
+        &::-webkit-scrollbar {
+            width: 3px;
+            background-color: white;
+        }
+
+        &::-webkit-scrollbar-thumb {
+          background-color: rgba(229, 122, 29, 0.6);
+          border-radius: 10px;
+        }
+
+        &::-webkit-scrollbar-button {
+          display: none;
+          width: 0px;
+          height: 0px;
+        }
+    }
+}
+
+.about_indicators_title {
+
+    font-weight: 700;
+    font-size: 1.79rem;
+    margin-bottom: 20px;
+
+}
+
+.about_indicators_list {
+
+    display: flex;
+    gap: 40px;
+
+}
+
+.about_indicators_item_image {
+
+    border-radius: 100%;
+    width: 80px;
+    aspect-ratio: 1/1;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin-bottom: 10px;
+
+}
+
+.about_first_image {
+
+    background-color: black;
+    background-image: url("../img/van.svg");
+
+}
+
+.about_second_image {
+
+    background-color: #FFA75B;
+    background-image: url("../img/medal.svg");
+
+}
+
+.about_third_image {
+
+    background-color: #E57A1D;
+    background-image: url("../img/shield.svg");
+    margin-left: auto;
+    margin-right: auto;
+
+}
+
+.about_indicators_item_text {
+
+    font-weight: 700;
+    text-align: center;
+    font-size: 1.14rem;
+
+}
+
+.about_logo {
+
+    width: 381px;
+
+}

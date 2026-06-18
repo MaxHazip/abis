@@ -11,6 +11,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libjpeg-dev \
     zlib1g-dev \
     libwebp-dev \
+    libcairo2-dev \
+    libffi-dev \
+    pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements/base.in .

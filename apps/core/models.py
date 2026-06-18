@@ -257,7 +257,7 @@ class SiteSettings(SingletonModel):
         max_length=100,
         default="Моя компания"
     )
-    logo_header = models.ImageField(
+    logo_header = models.FileField(
         upload_to="settings/",
         verbose_name="Логотип"
     )

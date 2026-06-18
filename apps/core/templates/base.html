@@ -17,12 +17,13 @@
 <body>
     <header class="main_header">
         <div class="container header_container">
-            {% include 'includes/header.html' with site_settings=site_settings%}
+            {% include 'includes/header.html' with site_settings=site_settings %}
         </div>    
         {% include 'includes/slider.html' with slider=slider %}
     </header>
     <main>
         {% include 'includes/product_groups.html' with product_groups=product_group%}
+        {% include 'includes/about.html' with site_settings=site_settings %}
         {% comment %} <div id="feedbackContainer">
             {% include 'includes/feedback_form_partial.html' with form=form %}
         </div> {% endcomment %}

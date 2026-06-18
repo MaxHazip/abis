@@ -1,0 +1,89 @@
+.container_img {
+    width: 626px;
+    height: 161px;
+    padding: 40px 280px 40px 282px;
+}
+
+.container_up {
+    display: flex;
+    width: 1325px;
+    height: 164px;
+}
+
+.all_pages {
+    display: flex;
+    width: 354px;
+    justify-content: center;
+    padding: 56px 30px 32px 31px;
+}
+
+.first_column {
+    margin-right: 28px;
+}
+
+.all_pages p {
+    color: white; 
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.container_operating-mode {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 345px;
+}
+
+.container_operating-mode p{
+    color: white;
+    font-weight: 500;
+    font-size: 16px;
+}
+
+.container_down {
+    display: flex;
+    width: 1325px;
+    height: 197px;
+}
+
+.container_name {
+    display: flex;
+    width: 631px;
+    padding: 11px 0px 29px 38px;
+}
+
+.name {
+    color: white;
+    font-size: 70px;
+    font-weight: 800;
+    width: 251px;
+    text-transform: uppercase;
+}
+
+.near_the-name {
+    font-size: 16;
+    color: rgba(255, 255, 255, 0.64);
+    font-weight: 500;
+    margin-top: 65px;
+}
+
+.container_contacts {
+    width: 699px;
+    padding: 20px 30px 0px 188px;
+}
+
+.address {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.64);
+    font-weight: 500;
+    margin-left: 230px;
+    margin-bottom: 20px;
+}
+
+.phone_email {
+    font-size: 20px;
+    font-weight: 600;
+    color: white;
+    margin-left: 64px;
+}

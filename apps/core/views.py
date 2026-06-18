@@ -3,6 +3,7 @@ from django.views.generic import TemplateView
 from . import models
 from django.views.decorators.http import require_POST, require_GET
 from . import forms
+from django.shortcuts import render
 
 
 # Create your views here.
@@ -14,7 +15,7 @@ class MainView(TemplateView):
         context = super().get_context_data(**kwargs)
 
         context['product_group'] = models.ProductGroup.objects.all()
-        context['manufacturer'] = models.Manufacturer.objects.all()
+        context['manufacturer'] = models.Manufacturer.objects.exclude(logo='')
         context['service'] = models.Service.objects.select_related('service_type').all()
         context['media'] = models.Media.objects.all()
         context['product'] = models.Product.objects.select_related(

@@ -4,6 +4,9 @@ import '../css/header.scss'
 import '../css/product_groups.scss'
 import '../css/about.scss'
 import './product_groups_carousel'
+import '../css/manufacturers.scss'
+import '../css/clients.scss'
+import '../css/footer.scss'
 import 'vite/modulepreload-polyfill';
 
 document.addEventListener('DOMContentLoaded', () => {

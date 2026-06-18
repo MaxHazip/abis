@@ -1,0 +1,20 @@
+<div class="carusel_clients">
+    <p class="title">Наши клиенты</p>
+    <div class="clients-slider">
+        <div class="clients-slide">
+            {% for item in clients_list %}
+                {% if item.image %}
+                    <img src="{{ item.image.url }}" alt="{{ item.name }}">
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <div class="clients-slide">
+            {% for item in clients_list %}
+                {% if item.image %}
+                    <img src="{{ item.image.url }}" alt="{{ item.name }}">
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>

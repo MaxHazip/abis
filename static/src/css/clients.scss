@@ -1,0 +1,70 @@
+.carusel_clients {
+    padding-bottom: 100px;
+}
+
+.title {
+    color: black;
+    font-size: 25px;
+    margin-bottom: 25px;
+    margin-left: 226px;
+    font-weight: 700;
+}
+
+.clients-slider {
+    overflow: hidden;
+    padding: 40px 0;
+    background: #ffffff; 
+    position: relative;
+    display: flex;
+    width: 100%;
+}
+
+/* Размытие по краям экрана */
+.clients-slider::before,
+.clients-slider::after {
+    position: absolute;
+    top: 0;
+    width: 100px;
+    height: 100%;
+    content: "";
+    z-index: 2;
+    pointer-events: none; /* Чтобы не мешало наведению мыши */
+}
+.clients-slider::before {
+    left: 0;
+    background: linear-gradient(to left, rgba(255,255,255,0), #ffffff);
+}
+.clients-slider::after {
+    right: 0;
+    background: linear-gradient(to right, rgba(255,255,255,0), #ffffff);
+}
+
+/* Движущаяся линия */
+.clients-slide {
+    display: flex;
+    align-items: center;
+    gap: 50px; /* Отступ 50px между логотипами */
+    padding-right: 50px; /* Важный отступ в конце ленты для бесшовности */
+    animation: slide-left 6s linear infinite;
+}
+
+.clients-slide img {
+    height: 60px; /* Высота логотипов */
+    width: auto;
+    object-fit: contain;
+}
+
+/* Пауза при наведении (опционально) */
+.clients-slider:hover .clients-slide {
+    animation-play-state: paused;
+}
+
+/* Анимация движения влево за экран */
+@keyframes slide-left {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-100%);
+    }
+}

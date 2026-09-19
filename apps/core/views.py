@@ -16,13 +16,7 @@ class MainView(TemplateView):
 
         context['product_group'] = models.ProductGroup.objects.all()
         context['manufacturer'] = models.Manufacturer.objects.exclude(logo='')
-        context['service'] = models.Service.objects.select_related('service_type').all()
-        context['media'] = models.Media.objects.all()
-        context['product'] = models.Product.objects.select_related(
-            'manufacturer',
-            'product_group'
-        ).prefetch_related('media').all()
-        context['client'] = models.Client.objects.all()
+        context['client'] = models.Client.objects.exclude(image='')
         context['form'] = forms.FeedbackForm()
         context['site_settings'] = models.SiteSettings.objects.first()
         context['contacts'] = models.Contacts.objects.first()
@@ -46,7 +40,6 @@ def submit_form(request):
             'includes/feedback_form_partial.html',
             {
                 "form": empty_form,
-                'feedback_text': "Спасибо! Заявка успешно отправлена, мы свяжемся с вами."
             })
     
-    return render(request, "includes/feedback_form_partial.html", {"form": form, 'feedback_text': ""})
+    return render(request, "includes/feedback_form_partial.html", {"form": form})

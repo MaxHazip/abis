@@ -1,0 +1,241 @@
+.feedback_container {
+
+    padding: 150px 20px;
+
+}
+
+.form_title {
+
+    font-weight: 800;
+    font-size: 2.86rem;
+    margin-bottom: 30px;
+
+    @media (max-width: 768px) {
+        font-size: 2rem; 
+        text-align: center;
+    }
+
+}
+
+.form_title > span {
+
+    color: #E57A1D;
+
+}
+
+.form_wrapper {
+
+    display: flex;  
+    width: 100%;
+    justify-content: space-between;
+    gap: 30px;
+
+    @media (max-width: 1024px) {
+        flex-direction: column; 
+        align-items: center;
+    }
+
+}
+
+.form_and_contacts {
+
+    width: 100%;
+    max-width: 460px; 
+
+}
+
+.contacts {
+
+    padding: 40px;
+    background-color: black;
+    color: white;
+    border-radius: 40px;
+    font-weight: 600;
+    max-width: 330px;
+    margin-bottom: 20px;
+
+}
+
+.form_phone_contact::before {
+
+    content: url("../img/phone.svg");
+
+}
+
+.form_mail::before {
+
+    content: url("../img/mail.svg");
+    
+}
+
+.contacts > a::before {
+
+    margin-right: 10px;
+
+}
+
+
+.contacts > a {
+
+    display: block;
+    margin-bottom: 5px;
+    position: relative;
+
+}
+
+.contacts > a:last-child {
+
+    margin-bottom: 0px;
+
+}
+
+
+.contacts > h3 {
+
+    font-size: 1.14rem;
+    margin-bottom: 10px;
+
+}
+
+.form_block {
+
+    padding: 30px 30px 15px 30px;
+    background-color: rgba(229, 122, 29, 0.39);
+    border-radius: 40px;
+    max-width: 460px;
+
+}
+
+.form_block_title {
+
+    font-weight: 600;
+    font-size: 1.14rem;
+    margin-bottom: 10px;
+
+}
+
+#feedbackForm > p {
+
+    margin-bottom: 10px;
+
+}
+
+#feedbackForm > p:last-child {
+
+    margin-bottom: 0px;
+
+}
+
+#feedbackForm input {
+
+    padding: 5px 10px;
+    border-radius: 40px;
+    background-repeat: no-repeat;
+    background-position: 10px center;
+    padding-left: 25px;
+    color: rgba(229, 122, 29, 0.6);
+
+}
+label[for="id_privacy"] {
+
+    font-size: 1rem;
+    color: rgba(0, 0, 0, 0.65);
+    font-weight: 600;
+
+}
+#feedbackForm input[type="checkbox"] {
+
+    cursor: pointer;
+    border-radius: 2px;
+    display: inline-block;
+    margin-top: 5px;
+
+}
+
+#feedbackForm textarea {
+
+    padding: 5px 10px;
+    border-radius: 10px;
+    background-repeat: no-repeat;
+    background-position: 10px 8px;
+    padding-left: 25px;
+    background-image: url("../img/message.svg");
+    color: rgba(229, 122, 29, 0.6);
+    resize: none;
+
+
+}
+
+#feedbackForm input::placeholder {
+
+    color: rgba(229, 122, 29, 0.6);
+
+}
+
+#feedbackForm textarea::placeholder {
+
+    color: rgba(229, 122, 29, 0.6);
+
+}
+
+
+.yandex_maps {
+
+    width: 100%;       
+    max-width: 770px;  
+    height: 100%;     
+    height: 585px;
+    border-radius: 40px;    
+
+}
+
+.form_last_name {
+
+    background-image: url("../img/people.svg");
+
+}
+
+.form_first_name {
+
+    background-image: url("../img/people.svg");
+
+}
+
+.form_middle_name {
+
+    background-image: url("../img/people.svg");
+
+}
+
+.form_phone {
+
+    background-image: url("../img/form_phone.svg");
+
+}
+
+.form_email {
+
+    background-image: url("../img/form_mail.svg");
+
+}
+
+#feedbackForm .form_submit_button {
+
+    width: 120px;
+    display: block;
+    margin: 0 auto;
+    background-color: #E57A1D;
+    border-radius: 40px;
+    box-shadow: 0px 0px 14px rgba(229, 122, 29, 0.89);
+    padding-left: 0px;
+    text-align: center;
+    color: white;
+    font-weight: 600;
+    margin-top: 10px;
+    background-image: url("../img/arrow.svg");
+    background-position: 90% center;
+    background-repeat: no-repeat;
+    background-size: 10px;
+    cursor: pointer;
+
+}

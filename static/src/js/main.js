@@ -7,6 +7,7 @@ import './product_groups_carousel'
 import '../css/manufacturers.scss'
 import '../css/clients.scss'
 import '../css/footer.scss'
+import '../css/form.scss'
 import 'vite/modulepreload-polyfill';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -53,3 +54,14 @@ document.addEventListener('DOMContentLoaded', () => {
     startTimer()
 
 })
+
+document.body.addEventListener('htmx:configRequest', (event) => {
+    const csrfToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+    
+    if (csrfToken) {
+        event.detail.headers['X-CSRFToken'] = csrfToken;
+    }
+});

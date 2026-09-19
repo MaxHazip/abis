@@ -4,10 +4,7 @@
     hx-target="#feedbackForm"
     hx-swap="outerHTML"    
 >
-    {% csrf_token %}
-    {{ form.as_p }}
-    <input type="submit">
+        {% csrf_token %}
+        {{ form.as_p }}
+    <input type="submit" class="form_submit_button">
 </form>
-<div class="alert alert-success">
-    {{ feedback_text }}
-</div>

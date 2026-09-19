@@ -9,13 +9,21 @@
     display: flex;
     width: 100%;
     justify-content: space-around;
+    align-items: center; 
+    gap: 30px; 
+
+    @media (max-width: 1024px) {
+        flex-direction: column; 
+        text-align: center;     
+    }
 
 }
 
 
 .about_text {
 
-    width: 800px;
+    width: 100%;
+    max-width: 800px;
     height: 225px;
     background-color: #E57A1D;
     border-radius: 35px;
@@ -35,6 +43,7 @@
         &::-webkit-scrollbar {
             width: 3px;
             background-color: white;
+            border-radius: 10px;
         }
 
         &::-webkit-scrollbar-thumb {
@@ -62,6 +71,11 @@
 
     display: flex;
     gap: 40px;
+    flex-wrap: wrap;
+
+    @media (max-width: 1024px) {
+        justify-content: center;    
+    }
 
 }
 
@@ -109,6 +123,9 @@
 
 .about_logo {
 
-    width: 381px;
+    width: 100%;
+    max-width: 380px;
+    height: auto;
+
 
 }

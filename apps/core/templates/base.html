@@ -23,12 +23,10 @@
     </header>
     <main>
         {% include 'includes/product_groups.html' with product_groups=product_group%}
-        {% include 'includes/about.html' with site_settings=site_settings %}
         {% include 'includes/manufacturers.html' with manufacturers_list=manufacturer %}
-        {% include 'includes/clients.html' with clients_list=client%}
-        {% comment %} <div id="feedbackContainer">
-            {% include 'includes/feedback_form_partial.html' with form=form %}
-        </div> {% endcomment %}
+        {% include 'includes/about.html' with site_settings=site_settings %}
+        {% include 'includes/clients.html' with clients_list=client site_settings=site_settings %}        
+        {% include 'includes/feedback_form.html' with form=form contacts=contacts %} 
     </main>
     <footer class="main_footer">
         <div class="container footer_container">

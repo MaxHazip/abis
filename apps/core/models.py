@@ -29,12 +29,12 @@ class Manufacturer(models.Model):
         verbose_name="Тип продукта"
     )
     register = models.BooleanField(
-        default=False, 
+        default=True, 
         blank=False, 
         null=False,
         verbose_name="Присутствие в регистре"
     )
-    logo = models.ImageField(
+    logo = models.FileField(
         blank=False, 
         null=False,
         verbose_name="Логотип",
@@ -72,107 +72,6 @@ class ProductGroup(models.Model):
     def __str__(self):
         return self.name
     
-class Media(models.Model):
-    image = models.ImageField(upload_to="products/", verbose_name="Медиа")
-
-    class Meta:
-        verbose_name = "Медиа"
-        verbose_name_plural = "Медиа"
-
-    def __str__(self):
-        return str(self.id)
-    
-class Product(models.Model):
-    name = models.CharField(
-        verbose_name="Название продукта",
-        max_length=100,
-        null=False,
-        blank=False
-    )
-    product_group = models.ForeignKey(
-        ProductGroup,
-        verbose_name="Товарная группа",
-        null=True,
-        blank=False,
-        on_delete=models.SET_NULL
-    )
-    manufacturer = models.ForeignKey(
-        Manufacturer,
-        verbose_name="Производитель",
-        null=True,
-        blank=False,
-        on_delete=models.SET_NULL
-    )
-    media = models.ManyToManyField(
-        Media, 
-        verbose_name="Медиа товара", 
-        blank=True
-    )
-    popularity = models.PositiveIntegerField(
-        default=0,
-        verbose_name="Популярность товара",
-        null=False,
-        blank=False
-    )
-
-    class Meta:
-        verbose_name = "Товар"
-        verbose_name_plural = "Товары"
-        ordering = ['popularity', 'name']
-
-    def __str__(self):
-        return self.name
-    
-class ServiceType(models.Model):
-    name = models.CharField(
-        verbose_name="Тип услуги", 
-        max_length=50, 
-        null=False, 
-        blank=False
-    )
-
-    class Meta:
-        verbose_name = "Тип услуги"
-        verbose_name_plural = "Типы услуг"
-        ordering = ['name']
-
-    def __str__(self):
-        return self.name
-    
-class Service(models.Model):
-
-    name = models.CharField(
-        verbose_name="Название услуги", 
-        max_length=50, 
-        null=False, 
-        blank=False
-    )
-    service_type = models.ForeignKey(
-        ServiceType, 
-        verbose_name="Тип услуги",
-        blank=True,
-        null=True,
-        on_delete=models.SET_NULL
-    )
-    description = models.TextField(
-        verbose_name="Описание услуги",
-        blank=False,
-        null=False        
-    )
-    popularity = models.PositiveIntegerField(
-        default=0,
-        verbose_name="Популярность услуги",
-        blank=False,
-        null=False
-    )
-
-    class Meta:
-        verbose_name = "Услуга"
-        verbose_name_plural = "Услуги"
-        ordering = ['popularity', 'name']
-
-    def __str__(self):
-        return self.name
     
 
 class Client(models.Model):
@@ -183,7 +82,7 @@ class Client(models.Model):
         blank=False
     )
 
-    image = models.ImageField(
+    image = models.FileField(
         upload_to="clients/",
         verbose_name="Логотип клиента"
     )

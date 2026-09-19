@@ -1,56 +1,95 @@
+.container_up {
+    display: grid;
+    grid-template-columns: 625px 1fr 1fr;
+    width: 100%;
+    height: auto;
+
+    @media (max-width: 1200px) {
+        
+        grid-template-columns: 0px 1fr 1fr; 
+    }
+
+    @media (max-width: 768px) {
+        
+        grid-template-columns: 1fr; 
+    }
+}
+
 .container_img {
     width: 626px;
-    height: 161px;
-    padding: 40px 280px 40px 282px;
+    height: 100%;
+    background-image: url("../img/arrow.svg");
+    background-repeat: no-repeat;
+    background-position: center;
+    border-right: 1px solid white;
+    border-bottom: 1px solid white;
+
+    @media (max-width: 1200px) {
+        display: none;
+    }
+
 }
 
-.container_up {
-    display: flex;
-    width: 1325px;
-    height: 164px;
+.footer_info {
+
+    color: white;
+    padding: 25px 40px;
+
 }
 
-.all_pages {
+.footer_nav {
     display: flex;
     width: 354px;
     justify-content: center;
-    padding: 56px 30px 32px 31px;
+    padding: 40px 30px 0px 31px;
+    border-bottom: 1px solid white;
+    border-right: 1px solid white;
+    gap: 30px;
+    padding-bottom: 50px;
+    
 }
 
-.first_column {
-    margin-right: 28px;
-}
+.up_column {
 
-.all_pages p {
-    color: white; 
-    font-size: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
     font-weight: 500;
-    margin-bottom: 8px;
+
 }
 
 .container_operating-mode {
     display: flex;
     justify-content: center;
     align-items: center;
-    width: 345px;
+    border-bottom: 1px solid white;
+    line-height: 20px;
+
 }
 
 .container_operating-mode p{
-    color: white;
     font-weight: 500;
-    font-size: 16px;
+    font-size: 1.14rem;
 }
 
 .container_down {
     display: flex;
-    width: 1325px;
-    height: 197px;
+    width: 100%;
+    justify-content: space-between;
+    padding: 11px 0px 30px 0px;
+    flex-wrap: wrap; 
+    gap: 20px;
+
+    @media (max-width: 768px) {
+        flex-direction: column; 
+        align-items: center;
+        text-align: center;
+    }
 }
 
 .container_name {
     display: flex;
-    width: 631px;
-    padding: 11px 0px 29px 38px;
+    
 }
 
 .name {
@@ -69,21 +108,24 @@
 }
 
 .container_contacts {
-    width: 699px;
-    padding: 20px 30px 0px 188px;
+
+    text-align: right;
+
+    @media (max-width: 768px) {
+        text-align: center;
+    }
+
 }
 
 .address {
-    font-size: 16px;
+    font-size: 1.14rem;
     color: rgba(255, 255, 255, 0.64);
     font-weight: 500;
-    margin-left: 230px;
     margin-bottom: 20px;
 }
 
 .phone_email {
-    font-size: 20px;
+    font-size: 1.43rem;
     font-weight: 600;
     color: white;
-    margin-left: 64px;
 }

@@ -19,7 +19,7 @@
     width: 100%;
 }
 
-/* Размытие по краям экрана */
+
 .clients-slider::before,
 .clients-slider::after {
     position: absolute;
@@ -28,7 +28,7 @@
     height: 100%;
     content: "";
     z-index: 2;
-    pointer-events: none; /* Чтобы не мешало наведению мыши */
+    pointer-events: none;
 }
 .clients-slider::before {
     left: 0;
@@ -39,27 +39,27 @@
     background: linear-gradient(to right, rgba(255,255,255,0), #ffffff);
 }
 
-/* Движущаяся линия */
+
 .clients-slide {
     display: flex;
     align-items: center;
-    gap: 50px; /* Отступ 50px между логотипами */
-    padding-right: 50px; /* Важный отступ в конце ленты для бесшовности */
-    animation: slide-left 6s linear infinite;
+    gap: 50px;
+    padding-right: 50px;
+    animation: slide-left 15s linear infinite;
 }
 
 .clients-slide img {
-    height: 60px; /* Высота логотипов */
+    height: 60px; 
     width: auto;
     object-fit: contain;
 }
 
-/* Пауза при наведении (опционально) */
+
 .clients-slider:hover .clients-slide {
     animation-play-state: paused;
 }
 
-/* Анимация движения влево за экран */
+
 @keyframes slide-left {
     from {
         transform: translateX(0);

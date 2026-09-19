@@ -1,0 +1,17 @@
+<div class="feedback_container container">
+    <h2 class="form_title">Будем <span>рады</span> дальнейшему<br> сотрудничеству</h2>
+    <div class="form_wrapper">
+        <div class="form_and_contacts">
+            <div class="contacts">
+                <h3 class="contacts_title">Наши контакты:</h3>
+                <a href="tel:+7 (909) 032 33 22" class="form_phone_contact">+7 (909) 032 33 22</a>
+                <a href="mailto:a.a.kharchenko@yandex.ru" class="form_mail">a.a.kharchenko@yandex.ru</a>
+            </div>
+            <div class="form_block">
+                <h3 class="form_block_title">Оставьте сообщение, чтоб мы вам перезвонили!</h3>
+                {% include "./feedback_form_partial.html" with form=form %}
+            </div>
+        </div>
+        <iframe src="{{ contacts.map_code }}" class="yandex_maps"></iframe>
+    </div>
+</div>

@@ -44,11 +44,6 @@ class ProductGroupAdmin(admin.ModelAdmin):
     logo_preview.short_description = "Изображение"
 
 
-@admin.register(models.ServiceType)
-class ServiceTypeAdmin(admin.ModelAdmin):
-    list_display = ("name",)
-    search_fields = ("name",)
-
 
 @admin.register(models.Client)
 class ClientAdmin(admin.ModelAdmin):
@@ -72,29 +67,6 @@ class ManufacturerAdmin(admin.ModelAdmin):
     
     logo_preview.short_description = "Логотип"
 
-
-@admin.register(models.Media)
-class MediaAdmin(admin.ModelAdmin):
-    list_display = ("id", "logo_preview")
-
-    def logo_preview(self, obj):
-        return get_image_preview_html(obj.image)
-    
-    logo_preview.short_description = "Медиа"
-
-
-@admin.register(models.Product)
-class ProductAdmin(admin.ModelAdmin):
-    list_display = ("name", "product_group", "manufacturer")
-    list_filter = ("product_group", "manufacturer")
-    search_fields = ("name",)
-
-
-@admin.register(models.Service)
-class ServiceAdmin(admin.ModelAdmin):
-    list_display = ("name", "service_type")
-    list_filter = ("service_type",)
-    search_fields = ("name",)
 
 
 @admin.register(models.Feedback)

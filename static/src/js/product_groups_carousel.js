@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
     })
 
     window.addEventListener('resize', () => {
-        // Пересчитываем положение, чтобы верстка не ломалась
+        
         updateCarousel();
     });
 

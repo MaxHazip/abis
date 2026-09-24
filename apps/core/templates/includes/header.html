@@ -1,10 +1,12 @@
 <nav class="nav header_nav">
+    {% if site_settings.logo_header %}
     <img src="{{ site_settings.logo_header.url }}" alt="Логотип сайта" class="header_logo">
+    {% endif %}
     <ul class="main_nav_list">
-        <a href="#about"><li class="main_nav_list_item">О компании</li></a>
-        <a href="#manufacturers"><li class="main_nav_list_item">Производители</li></a>
-        <a href="#products"><li class="main_nav_list_item">Товары</li></a>
-        <a href="#clients"><li class="main_nav_list_item">Наши клиенты</li></a>
-        <a href="#feedback"><li class="main_nav_list_item">Связаться с нами</li></a>
+        <li class="main_nav_list_item"><a href="#about">О компании</a></li>
+        <li class="main_nav_list_item"><a href="#manufacturers">Производители</a></li>
+        <li class="main_nav_list_item"><a href="#products">Товары</a></li>
+        <li class="main_nav_list_item"><a href="#clients">Наши клиенты</a></li>
+        <li class="main_nav_list_item"><a href="#feedback">Связаться с нами</a></li>
     </ul>
 </nav>

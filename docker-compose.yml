@@ -15,6 +15,14 @@ services:
     networks:
       - app-network
 
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+
   web:
     build:
       context: .
@@ -30,6 +38,7 @@ services:
       - .env
     depends_on:
       - db
+      - redis
     networks:
       - app-network
 
@@ -43,6 +52,21 @@ services:
     ports:
       - "5173:5173"
     command: sh -c "npm install && npm run dev"
+    networks:
+      - app-network
+      
+  celery:
+    build: .
+    command: celery -A config worker -l info
+    volumes:
+      - .:/app
+    environment:
+      - REDIS_URL=redis://redis:6379/1
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - POSTGRES_URL=postgres://abisuser:abispassword@db:5432/abisdb
+    depends_on:
+      - redis
+      - db
     networks:
       - app-network
 

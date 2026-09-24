@@ -69,10 +69,3 @@ class FeedbackForm(forms.ModelForm):
             'text': "", 
             'privacy': 'Нажимая кнопку «Отправить», я даю свое согласие на обработку моих персональных данных'
         }
-
-    def clean_phone_number(self):
-        phone = self.cleaned_data.get('phone_number')
-        allowed_chars = set('0123456789+() -')
-        if not all(c in allowed_chars for c in phone):
-            raise forms.ValidationError("Неверный формат номера телефона")     
-        return phone

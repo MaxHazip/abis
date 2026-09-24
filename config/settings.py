@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'apps.core',
     'easy_thumbnails',
     'solo',
+    'phonenumber_field',
 ]
 
 MIDDLEWARE = [
@@ -92,20 +93,16 @@ DATABASES = {
 
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': env("REDIS_URL", default="redis://127.0.0.1:6379/1"),
+        'OPTIONS': {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
     }
 }
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 SESSION_CACHE_ALIAS = 'default'
-
-# broker_url = env("CELERY_URL")
-# result_backend = 'django-db'
-# CELERY_broker_connection_retry_on_startup = True
-# accept_content = ['json']
-# task_serializer = 'json'
-
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -137,6 +134,16 @@ USE_I18N = True
 
 USE_TZ = True
 
+CELERY_BROKER_URL = env("CELERY_URL", default="redis://127.0.0.1:6379/0")
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_CACHE_BACKEND = "default"
+
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
@@ -161,3 +168,13 @@ DJANGO_VITE = {
         'manifest_path': BASE_DIR / 'static' / 'dist' / '.vite' / 'manifest.json',
     }
 }
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = env("EMAIL_HOST", default="smtp.yandex.ru")
+EMAIL_PORT = env.int("EMAIL_PORT", default=465)
+EMAIL_USE_SSL=env.bool("EMAIL_USE_SSL", default=True)
+EMAIL_USE_TLS=env.bool("EMAIL_USE_TLS", default=False)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default=EMAIL_HOST_USER)
+

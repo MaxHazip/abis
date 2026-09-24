@@ -16,11 +16,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements/base.in .
+RUN pip install --upgrade pip && pip install poetry
 
-RUN pip install --upgrade pip && pip install pip-tools
-RUN pip-compile base.in -o base.txt
-RUN pip-sync base.txt
+COPY pyproject.toml poetry.lock* ./
+
+RUN poetry config virtualenvs.create false \
+    && poetry install --no-interaction --no-ansi --no-root
 
 COPY . .
 

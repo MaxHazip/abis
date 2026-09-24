@@ -1,5 +1,6 @@
 from django.db import models
 from solo.models import SingletonModel
+from phonenumber_field.modelfields import PhoneNumberField
 
 # Create your models here.
 class Manufacturer(models.Model):
@@ -114,7 +115,7 @@ class Feedback(models.Model):
         null=True,
         blank=True
     )
-    phone_number = models.CharField(
+    phone_number = PhoneNumberField(
         verbose_name="Номер телефона",
         max_length=30,
         null=False,
@@ -158,22 +159,25 @@ class SiteSettings(SingletonModel):
     )
     logo_header = models.FileField(
         upload_to="settings/",
-        verbose_name="Логотип"
+        verbose_name="Логотип",
+        blank=True,
+        null=True
     )
     copyright_text = models.TextField(
         verbose_name="Текст копирайта", 
         default="© 2026 Все права защищены", 
         max_length=255
-    
+
     )
     seo_title = models.CharField(
         verbose_name="Зоголовок в теге title",
         max_length=50,
-        blank=True
+        blank=True,
+        default="Официальный сайт компании Abis"
     )
     seo_description = models.TextField(
         verbose_name="Главный SEO Description",
-        blank=True
+        blank=True,
     )
 
     class Meta:
@@ -186,29 +190,34 @@ class SiteSettings(SingletonModel):
 class Contacts(SingletonModel):
     address = models.CharField(
         verbose_name="Адрес офиса", 
-        max_length=255
+        max_length=255,
+        default="г. Сургут Нефтеюганское шоссе, 46"
     )
-    main_phone = models.CharField(
+    main_phone = PhoneNumberField(
         verbose_name="Основной номер телефона", 
-        max_length=30
+        max_length=30,
+        default="+79090323322"
     )
-    second_phone = models.CharField(
+    second_phone = PhoneNumberField(
         verbose_name="Дополнительный номер", 
-        max_length=30
+        max_length=30,
+        default="+79090323322"
     )
     email = models.EmailField(
-        verbose_name="Адрес электронной почты"
+        verbose_name="Адрес электронной почты",
+        default="a.a.kharchenko@yandex.ru"
     )
     work_hours = models.CharField(
         verbose_name="Часы работы", 
-        max_length=100
+        max_length=100,
+        default="пн-пт, с 9:00 до 18:00"
     )
 
     map_code = models.TextField(
         verbose_name="Код интерактивной карты",
         blank=True,
         null=True,
-        help_text="Вствьте iframe или скрипт карты из конструктора карт"
+        help_text="Вствьте src из тега iframe виджета карты"
     )
 
     class Meta:

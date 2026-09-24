@@ -21,7 +21,9 @@
                     </li>
                 </ul>
             </div>
+            {% if site_settings.logo_header %}
             <img class="about_logo" src="{{ site_settings.logo_header.url }}"></img>
+            {% endif %}
         </div>
     </div>
 </section>

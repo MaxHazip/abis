@@ -2,6 +2,12 @@
 
     padding: 143px 0px 91px 0px;
 
+    @media (max-width: 768px) {
+
+        padding: 50px 0px 40px 0px;
+
+    }
+
     .catalog {
 
         background-color: #E57A1D;
@@ -9,6 +15,12 @@
         padding: 50px 50px 25px 50px;
         position: relative;
         overflow: hidden;
+
+        @media (max-width: 768px) {
+
+            padding: 20px 20px 15px 20px;
+
+        }
 
         .carousel_container {
 
@@ -30,6 +42,12 @@
             
             transition: 0.3s ease-in-out;
 
+            @media (max-width: 768px) {
+
+                gap: 10px;
+
+            }
+
             .carousel-card {
 
                 padding: 30px 40px;
@@ -43,7 +61,7 @@
                 text-align: center;
                 font-weight: 600;
                 justify-content: space-around;
-                    
+               
             }
 
         }
@@ -86,7 +104,7 @@
 
 .carousel-scrollbar-track {
 
-    width: 330px;
+    width: 80%;
     height: 3px;
     background-color: white;
     margin: 30px auto 0px auto;

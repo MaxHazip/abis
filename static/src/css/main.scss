@@ -4,7 +4,13 @@
     padding: 0 20px;   
     margin: 0 auto;
     box-sizing: border-box; 
+    
 }
+
+.main_header {
+    width: 100%;
+}
+
 html {
 
     font-family: 'Inter';
@@ -27,6 +33,19 @@ html {
     z-index: 1000;
     left: 50%;
     transform: translate(-50%);
+    width: 100%;
+
+    @media (max-width: 1024px) {
+
+        padding: 10px 20px 15px 20px; 
+        
+    }
+    @media (max-width: 768px) {
+
+        padding: 5px 20px 5px 20px; 
+        border-radius: 0px 0px 20px 20px;
+        
+    }
 
 }
 
@@ -34,12 +53,9 @@ html {
 
     position: relative;
     width: 100%;
-    height: 900px;
+    aspect-ratio: 2/1;
     overflow: hidden;
 
-    @media (max-width: 768px) {
-        height: 500px; 
-    }
 
     .slider-wrapper {
 
@@ -70,4 +86,8 @@ html {
 .footer_container {
     background-color: black;
     border-radius: 40px 40px 0px 0px;
+}
+
+main {
+    margin: 0 auto;
 }

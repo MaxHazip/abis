@@ -2,11 +2,11 @@
     padding-bottom: 100px;
 }
 
-.title {
+.manufacturers_title {
     color: black;
-    font-size: 25px;
+    font-size: 1.79rem;
     margin-bottom: 25px;
-    margin-left: 226px;
+    margin-left: 5%;
     font-weight: 700;
 }
 
@@ -46,6 +46,11 @@
     gap: 50px; /* Отступ 50px между логотипами */
     padding-right: 50px; /* Важный отступ в конце ленты для бесшовности */
     animation: slide-left 40s linear infinite;
+
+    @media (max-width: 1440px) {
+        animation: slide-left 50s linear infinite;
+    }
+
 }
 
 .logos-slide img {

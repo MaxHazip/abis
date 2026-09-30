@@ -29,6 +29,11 @@ html, body {
   -ms-text-size-adjust: 100%;
   -moz-text-size-adjust: 100%;
   -webkit-text-size-adjust: 100%;
+
+  @media (max-width: 1024px) {
+    font-size: 12px;
+  }
+
 }
 
 input, button, textarea {

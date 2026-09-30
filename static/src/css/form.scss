@@ -54,6 +54,12 @@
     max-width: 330px;
     margin-bottom: 20px;
 
+    @media (max-width: 768px) {
+        padding: 20px;
+        max-width: 100%;
+        border-radius: 20px;
+    }
+
 }
 
 .form_phone_contact::before {
@@ -104,6 +110,12 @@
     border-radius: 40px;
     max-width: 460px;
 
+    @media (max-width: 768px) {
+        padding: 20px 15px;
+        max-width: 100%;
+        border-radius: 20px;
+    }
+
 }
 
 .form_block_title {
@@ -123,6 +135,16 @@
 #feedbackForm > p:last-child {
 
     margin-bottom: 0px;
+
+}
+
+#id_text {
+
+    @media (max-width: 768px) {
+
+        width: 90%;
+
+    }
 
 }
 

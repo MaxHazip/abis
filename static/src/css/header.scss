@@ -5,6 +5,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    width: 100%;
 
 }
 
@@ -18,6 +19,22 @@
     mix-blend-mode: difference;
     font-size: 1.43rem;
     font-weight: 600;
+
+    @media (max-width: 1440px) {
+
+        font-size: 1.29rem;
+
+    }
+    @media (max-width: 1024px) {
+
+        font-size: 1rem;
+
+    }
+    @media (max-width: 768px) {
+
+        display: none;
+
+    }
     
     
 }
@@ -26,5 +43,11 @@
 
     width: 65px;
     aspect-ratio: 1/1;
+
+    @media (max-width: 1439px) {
+
+        width: 50px;
+
+    }
 
 }

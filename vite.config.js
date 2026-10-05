@@ -8,6 +8,7 @@ export default defineConfig(({ command, mode }) => {
         plugins: [], 
         base: isProduction ? '/static/' : '/',
         build: {
+            cssMinify: 'lightningcss',
             manifest: true,
             outDir: path.resolve(__dirname, 'static/dist'),
             emptyOutDir: true,
@@ -24,3 +25,4 @@ export default defineConfig(({ command, mode }) => {
         }
     };
 });
+

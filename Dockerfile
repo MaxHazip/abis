@@ -25,8 +25,8 @@ RUN poetry config virtualenvs.create false \
 
 COPY . .
 
-RUN mkdir -p /app/media
+RUN mkdir -p /app/media /app/static
 
 EXPOSE 8000
 
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]

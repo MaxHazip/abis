@@ -29,10 +29,10 @@ if env_file.exists():
     env.read_env(env_file)
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env("SECRET_KEY")
+SECRET_KEY = env("SECRET_KEY", default='django-insecure-dummy-key-for-docker-build')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env("DEBUG")
+DEBUG = env("DEBUG", default=False)
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
 
@@ -150,8 +150,10 @@ CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATIC_ROOT = STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [
+    BASE_DIR / 'static' / 'dist',
+]
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = "/media/"
@@ -165,7 +167,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 DJANGO_VITE = {
     'default': {
         'dev_mode': DEBUG,
-        'dev_server_host': 'localhost',
+        'dev_server_host': '127.0.0.1',
         'dev_server_port': 5173,
         'manifest_path': BASE_DIR / 'static' / 'dist' / '.vite' / 'manifest.json',
     }
@@ -176,7 +178,7 @@ EMAIL_HOST = env("EMAIL_HOST", default="smtp.yandex.ru")
 EMAIL_PORT = env.int("EMAIL_PORT", default=465)
 EMAIL_USE_SSL=env.bool("EMAIL_USE_SSL", default=True)
 EMAIL_USE_TLS=env.bool("EMAIL_USE_TLS", default=False)
-EMAIL_HOST_USER = env("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default='default@gmail.com')
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default='default_dummy_password')
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default=EMAIL_HOST_USER)
 

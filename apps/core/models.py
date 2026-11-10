@@ -102,13 +102,11 @@ class Feedback(models.Model):
 
     class Status(models.TextChoices):
 
+        CREATED = "created", "создано"
         PENDING = "pending", "ожидает отправки"
         PROCESSING = "processing", "отправка в процессе"
         SENT = "sent", "отправка успешно зафиксирована"
         FAILED = "failed", "попытки отправки завершились с ошибкой"
-
-    def get_default_processng_time():
-        return (timezone.now() + timedelta(minutes=5)).time()
 
     last_name = models.CharField(
         verbose_name="Фамилия",
@@ -157,16 +155,15 @@ class Feedback(models.Model):
     )
     status = models.CharField(
         choices=Status.choices,
-        default=Status.PENDING,
+        default=Status.CREATED,
         blank=False,
         null=False,
         verbose_name="Статус задачи"
     )
-    processing_expires_at = models.TimeField(
+    processing_expires_at = models.DateTimeField(
         verbose_name="Время отправки",
-        null=False,
-        blank=False,
-        default=get_default_processng_time
+        null=True,
+        blank=True
     )
 
     class Meta:

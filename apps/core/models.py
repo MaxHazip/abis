@@ -170,7 +170,7 @@ class Feedback(models.Model):
         blank=True
     )
     start_attempts_count = models.PositiveIntegerField(
-        verbose_name="Количество попыток отправки",
+        verbose_name="Количество начатых попыток отправки",
         null=False,
         blank=False,
         default=0,

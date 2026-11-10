@@ -1,6 +1,7 @@
 from django.db import models
 from solo.models import SingletonModel
 from phonenumber_field.modelfields import PhoneNumberField
+from django.core.validators import MaxValueValidator
 from datetime import timedelta
 from django.utils import timezone
 
@@ -102,7 +103,6 @@ class Feedback(models.Model):
 
     class Status(models.TextChoices):
 
-        CREATED = "created", "создано"
         PENDING = "pending", "ожидает отправки"
         PROCESSING = "processing", "отправка в процессе"
         SENT = "sent", "отправка успешно зафиксирована"
@@ -155,16 +155,38 @@ class Feedback(models.Model):
     )
     status = models.CharField(
         choices=Status.choices,
-        default=Status.CREATED,
+        default=Status.PENDING,
         blank=False,
         null=False,
         verbose_name="Статус задачи"
     )
     processing_expires_at = models.DateTimeField(
-        verbose_name="Время отправки",
+        verbose_name="Лимит времени на задачу",
         null=True,
         blank=True
     )
+    next_retry_at = models.DateTimeField(
+        verbose_name="Время следующей отправки при ошибке",
+        null=True,
+        blank=True
+    )
+    retries_count = models.IntegerField(
+        verbose_name="Количество повторных попыток отправки",
+        null=False,
+        blank=False,
+        default=0,
+        validators=[MaxValueValidator(5)]
+    )
+    errors = models.CharField(
+        verbose_name="Ошибки для диагностики",
+        null=True,
+        blank=True
+    )
+    active_worker_name = models.CharField(
+        verbose_name="Название активного воркера",
+        null=True,
+        blank=True
+    ) 
 
     class Meta:
         verbose_name = "Обратная связь клиента"

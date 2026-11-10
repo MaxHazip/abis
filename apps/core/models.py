@@ -3,8 +3,6 @@ from django.db.models import Q
 from solo.models import SingletonModel
 from phonenumber_field.modelfields import PhoneNumberField
 from django.core.validators import MaxValueValidator
-from datetime import timedelta
-from django.utils import timezone
 
 # Create your models here.
 class Manufacturer(models.Model):
@@ -171,14 +169,14 @@ class Feedback(models.Model):
         null=True,
         blank=True
     )
-    attempts_count = models.PositiveIntegerField(
+    start_attempts_count = models.PositiveIntegerField(
         verbose_name="Количество попыток отправки",
         null=False,
         blank=False,
         default=0,
         validators=[MaxValueValidator(5)]
     )
-    errors = models.TextField(
+    last_error = models.TextField(
         verbose_name="Ошибки для диагностики",
         null=True,
         blank=True

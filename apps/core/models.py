@@ -170,20 +170,20 @@ class Feedback(models.Model):
         null=True,
         blank=True
     )
-    retries_count = models.IntegerField(
+    attempts_count = models.PositiveIntegerField(
         verbose_name="Количество повторных попыток отправки",
         null=False,
         blank=False,
         default=0,
         validators=[MaxValueValidator(5)]
     )
-    errors = models.CharField(
+    errors = models.TextField(
         verbose_name="Ошибки для диагностики",
         null=True,
         blank=True
     )
-    active_worker_name = models.CharField(
-        verbose_name="Название активного воркера",
+    active_worker_id = models.CharField(
+        verbose_name="Id активного воркера",
         null=True,
         blank=True
     ) 

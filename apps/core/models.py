@@ -169,7 +169,7 @@ class Feedback(models.Model):
         null=True,
         blank=True
     )
-    start_attempts_count = models.PositiveIntegerField(
+    started_attempts_count = models.PositiveIntegerField(
         verbose_name="Количество начатых попыток отправки",
         null=False,
         blank=False,
@@ -181,8 +181,8 @@ class Feedback(models.Model):
         null=True,
         blank=True
     )
-    active_worker_id = models.UUIDField(
-        verbose_name="Id активного воркера",
+    processing_token = models.UUIDField(
+        verbose_name="Id попытки обработки",
         null=True,
         blank=True
     ) 
@@ -192,9 +192,11 @@ class Feedback(models.Model):
         verbose_name_plural = "Обратная связь"
         ordering = ['created_at']
 
-        models.CheckConstraint(
-            condition=Q(attempt_count__lte=5), name="attempts_count_lte_5"
-        )
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(started_attempts_count__lte=5), name="attempts_count_lte_5"
+            )
+        ]
 
     def __str__(self):
         return self.last_name

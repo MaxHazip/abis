@@ -2,6 +2,24 @@ from celery import shared_task
 from apps.core.models import Feedback, Contacts
 from config import settings
 from django.core.mail import send_mail
+from datetime import timedelta, datetime
+
+def catch_bid(
+    feedback_id: int
+):
+
+    feedback = Feedback.objects.get(pk=feedback_id)
+
+    if (feedback.id != "PENDING" and datetime.now() < feedback.next_retry_at or feedback.started_attempts_count >= 5):
+        feedback.last_error = "Ошибка обработки задачи"
+        feedback.save()
+        return
+
+    feedback.status = "PROCESSING"
+    feedback.started_attempts_count += 1
+    feedback.processing_expires_at = datetime.now() + timedelta(minutes=5)
+
+    feedback.save()
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def send_feedback_notification_task(

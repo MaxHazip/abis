@@ -135,7 +135,10 @@ USE_I18N = True
 
 USE_TZ = True
 
-CELERY_BROKER_URL = env("CELERY_URL", default="redis://127.0.0.1:6379/0")
+CELERY_BROKER_URL = env(
+    "CELERY_BROKER_URL", 
+    default="redis://127.0.0.1:6379/0"
+)
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_CACHE_BACKEND = "default"
 

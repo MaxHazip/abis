@@ -1,6 +1,8 @@
 from django.db import models
 from solo.models import SingletonModel
 from phonenumber_field.modelfields import PhoneNumberField
+from datetime import timedelta
+from django.utils import timezone
 
 # Create your models here.
 class Manufacturer(models.Model):
@@ -97,6 +99,17 @@ class Client(models.Model):
         return self.name
     
 class Feedback(models.Model):
+
+    class Status(models.TextChoices):
+
+        PENDING = "pending", "ожидает отправки"
+        PROCESSING = "processing", "отправка в процессе"
+        SENT = "sent", "отправка успешно зафиксирована"
+        FAILED = "failed", "попытки отправки завершились с ошибкой"
+
+    def get_default_processng_time():
+        return (timezone.now() + timedelta(minutes=5)).time()
+
     last_name = models.CharField(
         verbose_name="Фамилия",
         max_length=70,
@@ -141,6 +154,19 @@ class Feedback(models.Model):
         null=False,
         blank=False,
         auto_now_add=True
+    )
+    status = models.CharField(
+        choices=Status.choices,
+        default=Status.PENDING,
+        blank=False,
+        null=False,
+        verbose_name="Статус задачи"
+    )
+    processing_expires_at = models.TimeField(
+        verbose_name="Время отправки",
+        null=False,
+        blank=False,
+        default=get_default_processng_time
     )
 
     class Meta:

@@ -8,7 +8,7 @@ def catch_bid(
     feedback_id: int
 ):
 
-    feedback = Feedback.objects.get(pk=feedback_id)
+    feedback = Feedback.objects.select_for_update().get(pk=feedback_id)
 
     if (feedback.id != "PENDING" and datetime.now() < feedback.next_retry_at or feedback.started_attempts_count >= 5):
         feedback.last_error = "Ошибка обработки задачи"

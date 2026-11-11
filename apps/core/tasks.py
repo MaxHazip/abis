@@ -11,6 +11,8 @@ def catch_bid(
     feedback_id: int
 ):
 
+    LOCK_ERROR_CODE_PG = ['40P01', '55P03']
+
     with transaction.atomic():
 
         try:
@@ -31,9 +33,14 @@ def catch_bid(
 
             return feedback.processing_token
 
-        except OperationalError:
+        except OperationalError as e:
 
-            return "Заявка уже заблокирована другим процессом"
+            pgcode = getattr(e.__cause__, 'pgcode', None)
+
+            if pgcode in LOCK_ERROR_CODE_PG:
+                return "Заявка уже заблокирована другим процессом"
+            else:
+                raise
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def send_feedback_notification_task(

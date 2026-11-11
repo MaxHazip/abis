@@ -16,33 +16,29 @@ def catch_bid(
         with transaction.atomic():
 
 
-                feedback = Feedback.objects.select_for_update(nowait=True).get(id=feedback_id)
-
-                if (feedback.status != Feedback.Status.PENDING 
-                    or (feedback.next_retry_at and timezone.now() < feedback.next_retry_at) 
-                    or feedback.started_attempts_count >= 5
-                ):
-                    return None
-
-                feedback.status = Feedback.Status.PROCESSING
-                feedback.started_attempts_count += 1
-                feedback.processing_expires_at = timezone.now() + timedelta(minutes=5)
-                feedback.processing_token = uuid.uuid4()
-                feedback.save()
-
-                return feedback.processing_token
+            feedback = Feedback.objects.select_for_update(nowait=True).get(id=feedback_id)
+            if (feedback.status != Feedback.Status.PENDING 
+                or (feedback.next_retry_at and timezone.now() < feedback.next_retry_at) 
+                or feedback.started_attempts_count >= 5
+            ):
+                return None
+            feedback.status = Feedback.Status.PROCESSING
+            feedback.started_attempts_count += 1
+            feedback.processing_expires_at = timezone.now() + timedelta(minutes=5)
+            feedback.processing_token = uuid.uuid4()
+            feedback.save()
+            return feedback.processing_token
 
     except OperationalError as e:
 
             pgcode = getattr(e.__cause__, 'pgcode', None)
 
             if pgcode in LOCK_ERROR_CODE_PG:
-                return "Заявка уже заблокирована другим процессом"
+                return None
             else:
                 raise
     except Feedback.DoesNotExist:
-
-        raise "Заявка не найдена" 
+        raise 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def send_feedback_notification_task(

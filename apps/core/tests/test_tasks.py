@@ -3,9 +3,10 @@ from apps.core.tasks import catch_bid
 from apps.core.models import Feedback
 from django.utils import timezone
 from datetime import timedelta
+import uuid
 
 @pytest.mark.django_db
-def test_something():
+def test_correct_catch_bid():
 
     feedback = Feedback.objects.create(
         last_name="Луков",
@@ -14,12 +15,15 @@ def test_something():
         privacy=True
     )
 
+    before_time = timezone.now()
+
     token = catch_bid(feedback_id=feedback.id)
 
     feedback.refresh_from_db()
 
-    assert token
+    assert isinstance(token, uuid.UUID)
     assert feedback.status == Feedback.Status.PROCESSING
     assert feedback.started_attempts_count == 1
     assert feedback.processing_expires_at <= timezone.now() + timedelta(minutes=5)
+    assert feedback.processing_expires_at > before_time
     assert feedback.processing_token == token

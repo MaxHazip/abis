@@ -11,7 +11,6 @@ def catch_bid(
     feedback_id: int
 ):
 
-    LOCK_ERROR_CODE_PG = ['40P01', '55P03']
     try:
         with transaction.atomic():
 
@@ -33,7 +32,7 @@ def catch_bid(
 
             pgcode = getattr(e.__cause__, 'pgcode', None)
 
-            if pgcode in LOCK_ERROR_CODE_PG:
+            if pgcode == '55P03':
                 return None
             else:
                 raise

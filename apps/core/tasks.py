@@ -3,23 +3,34 @@ from apps.core.models import Feedback, Contacts
 from config import settings
 from django.core.mail import send_mail
 from datetime import timedelta, datetime
+from django.db import transaction, OperationalError
 
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def catch_bid(
+    self,
     feedback_id: int
 ):
 
-    feedback = Feedback.objects.select_for_update().get(pk=feedback_id)
+    with transaction.atomic():
 
-    if (feedback.id != "PENDING" and datetime.now() < feedback.next_retry_at or feedback.started_attempts_count >= 5):
-        feedback.last_error = "Ошибка обработки задачи"
-        feedback.save()
-        return
+        try:
 
-    feedback.status = "PROCESSING"
-    feedback.started_attempts_count += 1
-    feedback.processing_expires_at = datetime.now() + timedelta(minutes=5)
+            feedback = Feedback.objects.select_for_update(nowait=True).get(id=feedback_id)
 
-    feedback.save()
+            if (feedback.id != "PENDING" and datetime.now() < feedback.next_retry_at or feedback.started_attempts_count >= 5):
+                feedback.last_error = "Ошибка обработки задачи"
+                feedback.save()
+                return
+
+            feedback.status = "PROCESSING"
+            feedback.started_attempts_count += 1
+            feedback.processing_expires_at = datetime.now() + timedelta(minutes=5)
+            feedback.processing_token = self.request.id
+            feedback.save()
+
+        except OperationalError:
+
+            return "Заявка уже заблокирована другим процессом"
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def send_feedback_notification_task(

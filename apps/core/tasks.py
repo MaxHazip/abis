@@ -12,28 +12,27 @@ def catch_bid(
 ):
 
     LOCK_ERROR_CODE_PG = ['40P01', '55P03']
+    try:
+        with transaction.atomic():
 
-    with transaction.atomic():
 
-        try:
+                feedback = Feedback.objects.select_for_update(nowait=True).get(id=feedback_id)
 
-            feedback = Feedback.objects.select_for_update(nowait=True).get(id=feedback_id)
+                if (feedback.status != Feedback.Status.PENDING 
+                    or (feedback.next_retry_at and timezone.now() < feedback.next_retry_at) 
+                    or feedback.started_attempts_count >= 5
+                ):
+                    return None
 
-            if (feedback.status != Feedback.Status.PENDING 
-                or (feedback.next_retry_at and timezone.now() < feedback.next_retry_at) 
-                or feedback.started_attempts_count >= 5
-            ):
-                return "Задача уже занята, не настало время следующей попытки или попытки закончились"
+                feedback.status = Feedback.Status.PROCESSING
+                feedback.started_attempts_count += 1
+                feedback.processing_expires_at = timezone.now() + timedelta(minutes=5)
+                feedback.processing_token = uuid.uuid4()
+                feedback.save()
 
-            feedback.status = Feedback.Status.PROCESSING
-            feedback.started_attempts_count += 1
-            feedback.processing_expires_at = timezone.now() + timedelta(minutes=5)
-            feedback.processing_token = uuid.uuid4()
-            feedback.save()
+                return feedback.processing_token
 
-            return feedback.processing_token
-
-        except OperationalError as e:
+    except OperationalError as e:
 
             pgcode = getattr(e.__cause__, 'pgcode', None)
 
@@ -41,6 +40,9 @@ def catch_bid(
                 return "Заявка уже заблокирована другим процессом"
             else:
                 raise
+    except Feedback.DoesNotExist:
+
+        raise "Заявка не найдена" 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def send_feedback_notification_task(

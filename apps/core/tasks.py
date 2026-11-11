@@ -2,12 +2,12 @@ from celery import shared_task
 from apps.core.models import Feedback, Contacts
 from config import settings
 from django.core.mail import send_mail
-from datetime import timedelta, datetime
+from datetime import timedelta
+from django.utils import timezone
 from django.db import transaction, OperationalError
+import uuid
 
-@shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def catch_bid(
-    self,
     feedback_id: int
 ):
 
@@ -17,16 +17,19 @@ def catch_bid(
 
             feedback = Feedback.objects.select_for_update(nowait=True).get(id=feedback_id)
 
-            if (feedback.id != "PENDING" and datetime.now() < feedback.next_retry_at or feedback.started_attempts_count >= 5):
-                feedback.last_error = "Ошибка обработки задачи"
-                feedback.save()
-                return
+            if (feedback.status != Feedback.Status.PENDING 
+                or (feedback.next_retry_at and timezone.now() < feedback.next_retry_at) 
+                or feedback.started_attempts_count >= 5
+            ):
+                return "Задача уже занята, не настало время следующей попытки или попытки закончились"
 
-            feedback.status = "PROCESSING"
+            feedback.status = Feedback.Status.PROCESSING
             feedback.started_attempts_count += 1
-            feedback.processing_expires_at = datetime.now() + timedelta(minutes=5)
-            feedback.processing_token = self.request.id
+            feedback.processing_expires_at = timezone.now() + timedelta(minutes=5)
+            feedback.processing_token = uuid.uuid4()
             feedback.save()
+
+            return feedback.processing_token
 
         except OperationalError:
 

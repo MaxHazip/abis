@@ -36,7 +36,7 @@ def test_correct_catch_bid(
     feedback: Feedback
 ):
 
-    before_time = timezone.now()
+    before_time = timezone.now() + timedelta(minutes=5)
 
     token = catch_bid(feedback_id=feedback.id)
 
@@ -56,7 +56,7 @@ def test_catch_bid_already_processing(
     feedback: Feedback
 ):
 
-    before_time = timezone.now()
+    before_time = timezone.now() + timedelta(minutes=5)
 
     token = catch_bid(feedback_id=feedback.id)
 
@@ -118,3 +118,47 @@ def test_catch_bid_too_many_attempts(
     assert feedback.started_attempts_count == initial_feedback_attempts_count
     assert feedback.processing_token == initial_feedback_token
     assert feedback.processing_expires_at == initial_feedback_processing_expires_at
+
+@pytest.mark.django_db
+def test_catch_bid_sent(
+    feedback: Feedback
+):
+
+    feedback.status = Feedback.Status.SENT
+    feedback.save()
+
+    initial_feedback_attempts_count = feedback.started_attempts_count
+    initial_feedback_token = feedback.processing_token
+    initial_feedback_processing_expires_at = feedback.processing_expires_at
+
+    token = catch_bid(feedback_id=feedback.id)
+
+    feedback.refresh_from_db()
+
+    assert token is None
+    assert feedback.status == Feedback.Status.SENT
+    assert feedback.started_attempts_count == initial_feedback_attempts_count
+    assert feedback.processing_token == initial_feedback_token
+    assert feedback.processing_expires_at == initial_feedback_processing_expires_at
+
+@pytest.mark.django_db
+def test_catch_bid_ready_for_attempt(
+    feedback: Feedback
+):
+
+    feedback.next_retry_at = timezone.now() - timedelta(minutes=10)
+    feedback.save()
+
+    before_time = timezone.now() + timedelta(minutes=5)
+    token = catch_bid(feedback_id=feedback.id)
+    after_time = timezone.now() + timedelta(minutes=5)
+
+    feedback.refresh_from_db()
+
+    assert isinstance(token, uuid.UUID)
+    assert feedback.status == Feedback.Status.PROCESSING
+    assert feedback.started_attempts_count == 1
+    assert feedback.processing_expires_at <= after_time
+    assert feedback.processing_expires_at > before_time
+    assert feedback.processing_token == token
+    

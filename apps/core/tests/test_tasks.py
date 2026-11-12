@@ -45,6 +45,8 @@ def test_catch_bid_already_processing(
     before_time = timezone.now()
 
     token = catch_bid(feedback_id=get_new_feedback.id)
+
+    after_time = timezone.now() + timedelta(minutes=5)
     
     get_new_feedback.refresh_from_db()
 
@@ -54,6 +56,6 @@ def test_catch_bid_already_processing(
     assert not token2
     assert get_new_feedback.status == Feedback.Status.PROCESSING
     assert get_new_feedback.started_attempts_count == 1
-    assert get_new_feedback.processing_expires_at <= timezone.now() + timedelta(minutes=5)
+    assert get_new_feedback.processing_expires_at <= after_time
     assert get_new_feedback.processing_expires_at > before_time
     assert get_new_feedback.processing_token == token

@@ -169,6 +169,9 @@ def test_catch_bid_no_such_feedback():
     with pytest.raises(Feedback.DoesNotExist) as exc_info:
         token = catch_bid(feedback_id=1)
 
-        assert token is None
+@pytest.mark.django_db
+def test_catch_bid_competing_workers(
+    feedback: Feedback
+):
 
     

@@ -147,6 +147,7 @@ def test_catch_bid_ready_for_attempt(
 ):
 
     feedback.next_retry_at = timezone.now() - timedelta(minutes=10)
+    feedback.started_attempts_count = 2 
     feedback.save()
 
     before_time = timezone.now() + timedelta(minutes=5)
@@ -157,7 +158,7 @@ def test_catch_bid_ready_for_attempt(
 
     assert isinstance(token, uuid.UUID)
     assert feedback.status == Feedback.Status.PROCESSING
-    assert feedback.started_attempts_count == 1
+    assert feedback.started_attempts_count == 3
     assert feedback.processing_expires_at <= after_time
     assert feedback.processing_expires_at > before_time
     assert feedback.processing_token == token

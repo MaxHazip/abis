@@ -162,4 +162,13 @@ def test_catch_bid_ready_for_attempt(
     assert feedback.processing_expires_at <= after_time
     assert feedback.processing_expires_at > before_time
     assert feedback.processing_token == token
+
+@pytest.mark.django_db
+def test_catch_bid_no_such_feedback():
+
+    with pytest.raises(Feedback.DoesNotExist) as exc_info:
+        token = catch_bid(feedback_id=1)
+
+        assert token is None
+
     

@@ -185,7 +185,7 @@ def thread_a(
 
             feedback = Feedback.objects.select_for_update(nowait=True).get(id=feedback_id)
             lock_event.set()
-            free_event.wait()
+            free_event.wait(timeout=10)
     except Exception as e:
 
         errors.put(e)
@@ -236,17 +236,17 @@ def test_catch_bid_competing_workers(
 
         assert errors.empty()
 
-        before_time = timezone.now() + timedelta(minutes=5)
+    before_time = timezone.now() + timedelta(minutes=5)
 
-        token = catch_bid(feedback_id=feedback.id)
+    token = catch_bid(feedback_id=feedback.id)
 
-        after_time = timezone.now() + timedelta(minutes=5)
+    after_time = timezone.now() + timedelta(minutes=5)
 
-        feedback.refresh_from_db()
+    feedback.refresh_from_db()
 
-        assert isinstance(token, uuid.UUID)
-        assert feedback.status == Feedback.Status.PROCESSING
-        assert feedback.started_attempts_count == 1
-        assert feedback.processing_expires_at <= after_time
-        assert feedback.processing_expires_at > before_time
-        assert feedback.processing_token == token
+    assert isinstance(token, uuid.UUID)
+    assert feedback.status == Feedback.Status.PROCESSING
+    assert feedback.started_attempts_count == 1
+    assert feedback.processing_expires_at <= after_time
+    assert feedback.processing_expires_at > before_time
+    assert feedback.processing_token == token

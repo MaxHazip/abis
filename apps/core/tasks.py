@@ -36,6 +36,7 @@ def catch_bid(
                 return None
             else:
                 raise
+            
     except Feedback.DoesNotExist:
         raise 
 

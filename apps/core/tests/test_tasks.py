@@ -7,6 +7,7 @@ import uuid
 import threading
 from django.db import transaction, connection, close_old_connections, connections
 import queue
+from copy import copy
 
 @pytest.fixture
 def feedback():
@@ -198,15 +199,28 @@ def test_catch_bid_competing_workers(
     feedback: Feedback
 ):
 
+    lock_event = threading.Event()
+    free_event = threading.Event()
+
+    init_feedback = copy(feedback)
+
     try: 
 
         errors = queue.Queue()
-
-        lock_event = threading.Event()
-        free_event = threading.Event()
         thread = threading.Thread(target=thread_a, args=(feedback.id, lock_event, free_event, errors))
         thread.start()
-        lock_event.wait(timeout=10)
+
+        assert lock_event.wait(timeout=10)
+
+        token = catch_bid(feedback.id)
+
+        feedback.refresh_from_db()
+
+        assert token is None
+        assert feedback.status == init_feedback.status
+        assert feedback.started_attempts_count == init_feedback.started_attempts_count
+        assert feedback.processing_expires_at == init_feedback.processing_expires_at
+        assert feedback.processing_token == init_feedback.processing_token
 
 
     finally:
@@ -216,6 +230,23 @@ def test_catch_bid_competing_workers(
 
         thread.join(timeout=10)
 
+        assert not thread.is_alive()
+
         close_old_connections()
 
         assert errors.empty()
+
+        before_time = timezone.now() + timedelta(minutes=5)
+
+        token = catch_bid(feedback_id=feedback.id)
+
+        after_time = timezone.now() + timedelta(minutes=5)
+
+        feedback.refresh_from_db()
+
+        assert isinstance(token, uuid.UUID)
+        assert feedback.status == Feedback.Status.PROCESSING
+        assert feedback.started_attempts_count == 1
+        assert feedback.processing_expires_at <= after_time
+        assert feedback.processing_expires_at > before_time
+        assert feedback.processing_token == token

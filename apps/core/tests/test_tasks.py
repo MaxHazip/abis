@@ -5,8 +5,8 @@ from django.utils import timezone
 from datetime import timedelta
 import uuid
 import threading
-from django.db import transaction, connection, close_old_connections
-import time
+from django.db import transaction, connection, close_old_connections, connections
+import queue
 
 @pytest.fixture
 def feedback():
@@ -172,17 +172,26 @@ def test_catch_bid_no_such_feedback():
     with pytest.raises(Feedback.DoesNotExist) as exc_info:
         token = catch_bid(feedback_id=1)
 
-lock_event = threading.Event()
-free_event = threading.Event()
-
 def thread_a(
-    feedback_id: int
+    feedback_id: int,
+    lock_event: threading.Event,
+    free_event: threading.Event,
+    errors: queue.Queue
 ):
-    with transaction.atomic():
 
-        feedback = Feedback.objects.select_for_update(nowait=True).get(id=feedback_id)
-        lock_event.set()
-        free_event.wait()
+    try: 
+        with transaction.atomic():
+
+            feedback = Feedback.objects.select_for_update(nowait=True).get(id=feedback_id)
+            lock_event.set()
+            free_event.wait()
+    except Exception as e:
+
+        errors.put(e)
+        
+    finally:
+
+        connections.close_all()
 
 @pytest.mark.django_db(transaction=True)
 def test_catch_bid_competing_workers(
@@ -191,18 +200,22 @@ def test_catch_bid_competing_workers(
 
     try: 
 
-        thread = threading.Thread(target=thread_a, args=(feedback.id))
+        errors = queue.Queue()
 
+        lock_event = threading.Event()
+        free_event = threading.Event()
+        thread = threading.Thread(target=thread_a, args=(feedback.id, lock_event, free_event, errors))
         thread.start()
+        lock_event.wait(timeout=10)
 
-        lock_event.wait()
 
-        time.sleep(3)
+    finally:
+
 
         free_event.set()
 
         thread.join(timeout=10)
 
-    finally:
-
         close_old_connections()
+
+        assert errors.empty()

@@ -4,6 +4,9 @@ from apps.core.models import Feedback
 from django.utils import timezone
 from datetime import timedelta
 import uuid
+import threading
+from django.db import transaction, connection, close_old_connections
+import time
 
 @pytest.fixture
 def feedback():
@@ -169,9 +172,37 @@ def test_catch_bid_no_such_feedback():
     with pytest.raises(Feedback.DoesNotExist) as exc_info:
         token = catch_bid(feedback_id=1)
 
-@pytest.mark.django_db
+lock_event = threading.Event()
+free_event = threading.Event()
+
+def thread_a(
+    feedback_id: int
+):
+    with transaction.atomic():
+
+        feedback = Feedback.objects.select_for_update(nowait=True).get(id=feedback_id)
+        lock_event.set()
+        free_event.wait()
+
+@pytest.mark.django_db(transaction=True)
 def test_catch_bid_competing_workers(
     feedback: Feedback
 ):
 
-    
+    try: 
+
+        thread = threading.Thread(target=thread_a, args=(feedback.id))
+
+        thread.start()
+
+        lock_event.wait()
+
+        time.sleep(3)
+
+        free_event.set()
+
+        thread.join(timeout=10)
+
+    finally:
+
+        close_old_connections()

@@ -18,7 +18,7 @@ def feedback():
     return feedback
 
 @pytest.fixture
-def feedback_with_early_retry():
+def feedback_with_future_retry():
 
     feedback = Feedback.objects.create(
         last_name="Луков",
@@ -76,22 +76,45 @@ def test_catch_bid_already_processing(
 
 @pytest.mark.django_db
 def test_catch_bid_early_time_retry(
-    feedback_with_early_retry: Feedback
+    feedback_with_future_retry: Feedback
 ):
 
-    initial_feedback_time = feedback_with_early_retry.next_retry_at
-    initial_feedback_status = feedback_with_early_retry.status
-    initial_feedback_attempts_count = feedback_with_early_retry.started_attempts_count
-    initial_feedback_token = feedback_with_early_retry.processing_token
-    initial_feedback_processing_expires_at = feedback_with_early_retry.processing_expires_at
+    initial_feedback_time = feedback_with_future_retry.next_retry_at
+    initial_feedback_status = feedback_with_future_retry.status
+    initial_feedback_attempts_count = feedback_with_future_retry.started_attempts_count
+    initial_feedback_token = feedback_with_future_retry.processing_token
+    initial_feedback_processing_expires_at = feedback_with_future_retry.processing_expires_at
 
-    token = catch_bid(feedback_id=feedback_with_early_retry.id)
+    token = catch_bid(feedback_id=feedback_with_future_retry.id)
 
-    feedback_with_early_retry.refresh_from_db()
+    feedback_with_future_retry.refresh_from_db()
 
     assert token is None
-    assert feedback_with_early_retry.status == initial_feedback_status
-    assert feedback_with_early_retry.started_attempts_count == initial_feedback_attempts_count
-    assert feedback_with_early_retry.next_retry_at == initial_feedback_time
-    assert feedback_with_early_retry.processing_token == initial_feedback_token
-    assert feedback_with_early_retry.processing_expires_at == initial_feedback_processing_expires_at
+    assert feedback_with_future_retry.status == initial_feedback_status
+    assert feedback_with_future_retry.started_attempts_count == initial_feedback_attempts_count
+    assert feedback_with_future_retry.next_retry_at == initial_feedback_time
+    assert feedback_with_future_retry.processing_token == initial_feedback_token
+    assert feedback_with_future_retry.processing_expires_at == initial_feedback_processing_expires_at
+
+@pytest.mark.django_db
+def test_catch_bid_too_many_attempts(
+    feedback: Feedback
+):
+
+    feedback.started_attempts_count = 5
+    feedback.save()
+
+    initial_feedback_status = feedback.status
+    initial_feedback_attempts_count = feedback.started_attempts_count
+    initial_feedback_token = feedback.processing_token
+    initial_feedback_processing_expires_at = feedback.processing_expires_at
+
+    token = catch_bid(feedback_id=feedback.id)
+
+    feedback.refresh_from_db()
+
+    assert token is None
+    assert feedback.status == initial_feedback_status
+    assert feedback.started_attempts_count == initial_feedback_attempts_count
+    assert feedback.processing_token == initial_feedback_token
+    assert feedback.processing_expires_at == initial_feedback_processing_expires_at

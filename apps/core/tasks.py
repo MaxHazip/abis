@@ -62,6 +62,47 @@ def mark_feedback_as_sent(
         
         return True
 
+def check_unsuccessful_sent_attempt(
+    feedback_id: int,
+    processing_token: uuid.UUID,
+    error: str
+):
+
+    with transaction.atomic():
+
+        feedback = Feedback.objects.select_for_update(nowait=True).get(id=feedback_id)
+
+        if (feedback.processing_token != processing_token or feedback.status != Feedback.Status.PROCESSING):
+
+            return True
+
+        feedback.last_error = error
+
+        if (feedback.started_attempts_count < 5):
+            feedback.status = Feedback.Status.PENDING
+
+            match feedback.started_attempts_count:
+                case 1:
+                    feedback.next_retry_at = timezone.now() + timedelta(minutes=5)
+                case 2:
+                    feedback.next_retry_at = timezone.now() + timedelta(minutes=15)
+                case 3:
+                    feedback.next_retry_at = timezone.now() + timedelta(hours=1)
+                case 4:
+                    feedback.next_retry_at = timezone.now() + timedelta(hours=6)
+        else:
+            
+            feedback.status = Feedback.Status.FAILED
+            feedback.next_retry_at = None
+
+        feedback.processing_expires_at = None
+        feedback.processing_token = None
+
+        return False
+
+
+
+    
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def send_feedback_notification_task(

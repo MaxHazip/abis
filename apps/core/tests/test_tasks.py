@@ -302,6 +302,8 @@ def test_mark_feedback_as_sent_resubmiission(
     feedback.refresh_from_db()
 
     assert feedback.status == Feedback.Status.SENT
+    assert feedback.processing_token is None
+    assert feedback.processing_expires_at is None
 
 @pytest.mark.django_db
 def test_mark_feedback_as_sent_outdated_worker(

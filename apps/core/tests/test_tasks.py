@@ -362,3 +362,54 @@ def test_check_unsuccessful_sent_attempt(
     assert feedback.processing_token is None
     assert feedback.processing_expires_at is None
     assert feedback.started_attempts_count == started_attempts_count + 1
+
+@pytest.mark.django_db
+def test_check_unsuccessful_sent_attempt_last_attempt(
+    feedback: Feedback
+):
+
+    feedback.started_attempts_count = 4
+    feedback.save()
+
+    token = catch_bid(feedback_id=feedback.id)
+
+    assert check_unsuccessful_sent_attempt(feedback_id=feedback.id, processing_token=token, error="Test Error")
+
+    feedback.refresh_from_db()
+
+    assert feedback.status == Feedback.Status.FAILED
+    assert feedback.next_retry_at is None
+    assert feedback.last_error == "Test Error"
+    assert feedback.processing_token is None
+    assert feedback.processing_expires_at is None
+    assert feedback.started_attempts_count == 5
+
+@pytest.mark.django_db
+def test_check_unsuccessful_sent_old_worker(
+    feedback: Feedback
+):
+
+    feedback.status = Feedback.Status.PROCESSING
+    
+    token_b = uuid.uuid4()
+
+    feedback.processing_token = token_b
+    feedback.save()
+
+    feedback.refresh_from_db()
+
+    init_feedback = copy(feedback)
+
+    token_a = uuid.uuid4()
+
+    assert not check_unsuccessful_sent_attempt(feedback_id=feedback.id, processing_token=token_a, error="Test Error")
+
+    feedback.refresh_from_db()
+
+    assert feedback.status == init_feedback.status
+    assert feedback.next_retry_at == init_feedback.next_retry_at
+    assert feedback.last_error == init_feedback.last_error
+    assert feedback.processing_token == init_feedback.processing_token
+    assert feedback.processing_expires_at == init_feedback.processing_expires_at
+    assert feedback.started_attempts_count == init_feedback.started_attempts_count
+    

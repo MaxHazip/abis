@@ -1,5 +1,5 @@
 import pytest
-from apps.core.tasks import catch_bid
+from apps.core.tasks import catch_bid, mark_feedback_as_sent
 from apps.core.models import Feedback
 from django.utils import timezone
 from datetime import timedelta
@@ -250,3 +250,40 @@ def test_catch_bid_competing_workers(
     assert feedback.processing_expires_at <= after_time
     assert feedback.processing_expires_at > before_time
     assert feedback.processing_token == token
+
+@pytest.mark.django_db
+def test_mark_feedback_as_sent_correct(
+    feedback: Feedback      
+):
+
+    token = catch_bid(feedback_id=feedback.id)
+
+    assert mark_feedback_as_sent(feedback_id=feedback.id, processing_token=token)
+
+    feedback.refresh_from_db()
+
+    assert feedback.status == Feedback.Status.SENT
+    assert feedback.processing_token == None
+    assert feedback.processing_expires_at == None
+
+@pytest.mark.django_db
+def test_mark_feedback_as_sent_incorrect_token(
+    feedback: Feedback      
+):
+
+    token = catch_bid(feedback_id=feedback.id)
+
+    feedback.refresh_from_db()
+
+    init_feedback = copy(feedback)
+
+    fake_token = uuid.uuid4()
+
+    assert not mark_feedback_as_sent(feedback_id=feedback.id, processing_token=fake_token)
+
+    feedback.refresh_from_db()
+
+    assert token == feedback.processing_token
+    assert feedback.status == init_feedback.status
+    assert feedback.processing_token == init_feedback.processing_token
+    assert feedback.processing_expires_at == init_feedback.processing_expires_at

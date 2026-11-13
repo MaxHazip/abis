@@ -40,27 +40,33 @@ def catch_bid(
     except Feedback.DoesNotExist:
         raise 
 
-def successfull_submission_check(
+def mark_feedback_as_sent(
     feedback_id: int,
     processing_token: uuid.UUID
 ):
 
-    with transaction.atomic():
+    try:
 
-        feedback = Feedback.objects.select_for_update(nowait=True).get(id=feedback_id)
+        with transaction.atomic():
 
-        if (feedback.status != Feedback.Status.PROCESSING):
-            return False
+            feedback = Feedback.objects.select_for_update(nowait=True).get(id=feedback_id)
 
-        if (feedback.processing_token != processing_token):
-            return False
+            if (feedback.status != Feedback.Status.PROCESSING):
+                return False
 
-        feedback.status = Feedback.Status.SENT
-        feedback.processing_token = None
-        feedback.processing_expires_at = None
-        feedback.save()
+            if (feedback.processing_token != processing_token):
+                return False
 
-        return True
+            feedback.status = Feedback.Status.SENT
+            feedback.processing_token = None
+            feedback.processing_expires_at = None
+            feedback.save()
+
+            return True
+
+    except OperationalError as e:
+
+        raise
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)

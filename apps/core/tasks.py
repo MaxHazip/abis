@@ -74,11 +74,11 @@ def check_unsuccessful_sent_attempt(
 
         if (feedback.processing_token != processing_token or feedback.status != Feedback.Status.PROCESSING):
 
-            return True
+            return False
 
         feedback.last_error = error
 
-        if (feedback.started_attempts_count < 5):
+        if (feedback.started_attempts_count < 5 and feedback.started_attempts_count > 0):
             feedback.status = Feedback.Status.PENDING
 
             match feedback.started_attempts_count:
@@ -98,7 +98,9 @@ def check_unsuccessful_sent_attempt(
         feedback.processing_expires_at = None
         feedback.processing_token = None
 
-        return False
+        feedback.save()
+
+        return True
 
 
 

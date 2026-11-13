@@ -1,5 +1,5 @@
 import pytest
-from apps.core.tasks import catch_bid, mark_feedback_as_sent
+from apps.core.tasks import catch_bid, mark_feedback_as_sent, check_unsuccessful_sent_attempt
 from apps.core.models import Feedback
 from django.utils import timezone
 from datetime import timedelta
@@ -325,3 +325,40 @@ def test_mark_feedback_as_sent_outdated_worker(
 
     assert feedback.status == Feedback.Status.PROCESSING
     assert feedback.processing_token == token_b 
+
+@pytest.mark.parametrize(
+    "started_attempts_count, delay_mins",
+    [
+        (0, 5),
+        (1, 15),
+        (2, 60),
+        (3, 360),
+    ]       
+)
+@pytest.mark.django_db
+def test_check_unsuccessful_sent_attempt(
+    feedback: Feedback,
+    started_attempts_count: int,
+    delay_mins: int
+):
+
+    feedback.started_attempts_count = started_attempts_count
+    feedback.save()
+
+    token = catch_bid(feedback_id=feedback.id)
+
+    before_time = timezone.now() + timedelta(minutes=delay_mins)
+
+    assert check_unsuccessful_sent_attempt(feedback_id=feedback.id, processing_token=token, error="Test Error")
+
+    after_time = timezone.now() + timedelta(minutes=delay_mins)
+
+    feedback.refresh_from_db()
+
+    assert feedback.status == Feedback.Status.PENDING
+    assert feedback.next_retry_at <= after_time
+    assert feedback.next_retry_at > before_time
+    assert feedback.last_error == "Test Error"
+    assert feedback.processing_token is None
+    assert feedback.processing_expires_at is None
+    assert feedback.started_attempts_count == started_attempts_count + 1

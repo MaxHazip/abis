@@ -263,8 +263,8 @@ def test_mark_feedback_as_sent_correct(
     feedback.refresh_from_db()
 
     assert feedback.status == Feedback.Status.SENT
-    assert feedback.processing_token == None
-    assert feedback.processing_expires_at == None
+    assert feedback.processing_token is None
+    assert feedback.processing_expires_at is None
 
 @pytest.mark.django_db
 def test_mark_feedback_as_sent_incorrect_token(
@@ -287,3 +287,39 @@ def test_mark_feedback_as_sent_incorrect_token(
     assert feedback.status == init_feedback.status
     assert feedback.processing_token == init_feedback.processing_token
     assert feedback.processing_expires_at == init_feedback.processing_expires_at
+
+@pytest.mark.django_db
+def test_mark_feedback_as_sent_resubmiission(
+    feedback: Feedback
+):
+
+    token = catch_bid(feedback_id=feedback.id)
+
+    assert mark_feedback_as_sent(feedback_id=feedback.id, processing_token=token)
+
+    assert not mark_feedback_as_sent(feedback_id=feedback.id, processing_token=token)
+
+    feedback.refresh_from_db()
+
+    assert feedback.status == Feedback.Status.SENT
+
+@pytest.mark.django_db
+def test_mark_feedback_as_sent_outdated_worker(
+    feedback: Feedback
+):
+
+    feedback.status = Feedback.Status.PROCESSING
+
+    token_b = uuid.uuid4()
+
+    feedback.processing_token = token_b
+    feedback.save()
+
+    token_a = uuid.uuid4()
+
+    assert not mark_feedback_as_sent(feedback_id=feedback.id, processing_token=token_a)
+
+    feedback.refresh_from_db()
+
+    assert feedback.status == Feedback.Status.PROCESSING
+    assert feedback.processing_token == token_b 

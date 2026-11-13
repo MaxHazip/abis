@@ -45,28 +45,22 @@ def mark_feedback_as_sent(
     processing_token: uuid.UUID
 ):
 
-    try:
+    with transaction.atomic():
 
-        with transaction.atomic():
-
-            feedback = Feedback.objects.select_for_update(nowait=True).get(id=feedback_id)
-
-            if (feedback.status != Feedback.Status.PROCESSING):
-                return False
-
-            if (feedback.processing_token != processing_token):
-                return False
-
-            feedback.status = Feedback.Status.SENT
-            feedback.processing_token = None
-            feedback.processing_expires_at = None
-            feedback.save()
-
-            return True
-
-    except OperationalError as e:
-
-        raise
+        feedback = Feedback.objects.select_for_update(nowait=True).get(id=feedback_id)
+        
+        if (feedback.status != Feedback.Status.PROCESSING):
+            return False
+        
+        if (feedback.processing_token != processing_token):
+            return False
+        
+        feedback.status = Feedback.Status.SENT
+        feedback.processing_token = None
+        feedback.processing_expires_at = None
+        feedback.save()
+        
+        return True
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)

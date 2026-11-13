@@ -185,7 +185,7 @@ def thread_a(
 
             feedback = Feedback.objects.select_for_update(nowait=True).get(id=feedback_id)
             lock_event.set()
-            free_event.wait(timeout=10)
+            assert free_event.wait(timeout=10)
     except Exception as e:
 
         errors.put(e)

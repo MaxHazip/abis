@@ -36,9 +36,32 @@ def catch_bid(
                 return None
             else:
                 raise
-            
+
     except Feedback.DoesNotExist:
         raise 
+
+def successfull_submission_check(
+    feedback_id: int,
+    processing_token: uuid.UUID
+):
+
+    with transaction.atomic():
+
+        feedback = Feedback.objects.select_for_update(nowait=True).get(id=feedback_id)
+
+        if (feedback.status != Feedback.Status.PROCESSING):
+            return False
+
+        if (feedback.processing_token != processing_token):
+            return False
+
+        feedback.status = Feedback.Status.SENT
+        feedback.processing_token = None
+        feedback.processing_expires_at = None
+        feedback.save()
+
+        return True
+
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def send_feedback_notification_task(

@@ -1,5 +1,5 @@
 import pytest
-from apps.core.tasks import catch_bid, mark_feedback_as_sent, check_unsuccessful_sent_attempt
+from apps.core.tasks import catch_bid, mark_feedback_as_sent, check_unsuccessful_sent_attempt, task_recovery
 from apps.core.models import Feedback
 from django.utils import timezone
 from datetime import timedelta
@@ -412,4 +412,76 @@ def test_check_unsuccessful_sent_old_worker(
     assert feedback.processing_token == init_feedback.processing_token
     assert feedback.processing_expires_at == init_feedback.processing_expires_at
     assert feedback.started_attempts_count == init_feedback.started_attempts_count
-    
+
+@pytest.mark.django_db
+def test_task_recovery(
+    feedback: Feedback
+):
+
+    feedback.status = Feedback.Status.PROCESSING
+    feedback.processing_expires_at = timezone.now() - timedelta(minutes=10)
+    feedback.started_attempts_count = 2
+
+    feedback.save()
+
+    before_time = timezone.now() + timedelta(minutes=15)
+
+    assert task_recovery(feedback_id=feedback.id, error="Test Error")
+
+    after_time = timezone.now() + timedelta(minutes=15)
+
+    feedback.refresh_from_db()
+
+    assert feedback.processing_expires_at is None
+    assert feedback.status == Feedback.Status.PENDING
+    assert feedback.next_retry_at > before_time
+    assert feedback.next_retry_at <= after_time
+    assert feedback.processing_token is None
+    assert feedback.last_error == "Test Error"
+    assert feedback.started_attempts_count == 2
+
+@pytest.mark.django_db
+def test_task_recovery_future_task(
+    feedback:Feedback
+):
+
+    feedback.status = Feedback.Status.PROCESSING
+    feedback.processing_expires_at = timezone.now() + timedelta(minutes=10)
+
+    feedback.save()
+
+    feedback.refresh_from_db()
+
+    init_feedback = feedback
+
+    assert not task_recovery(feedback_id=feedback.id, error="Test Error")
+
+    feedback.refresh_from_db()
+
+    assert feedback.processing_expires_at == init_feedback.processing_expires_at
+    assert feedback.status == init_feedback.status
+    assert feedback.next_retry_at == init_feedback.next_retry_at
+    assert feedback.last_error == init_feedback.last_error
+    assert feedback.processing_token == init_feedback.processing_token
+
+@pytest.mark.django_db
+def test_task_retry_no_more_attempts(
+    feedback: Feedback
+):
+
+    feedback.started_attempts_count = 5
+    feedback.processing_expires_at = timezone.now() - timedelta(minutes=5)
+    feedback.status = Feedback.Status.PROCESSING
+
+    feedback.save()
+
+    assert task_recovery(feedback_id=feedback.id, error=("Test Error"))
+
+    feedback.refresh_from_db()
+
+    assert feedback.status == Feedback.Status.FAILED
+    assert feedback.next_retry_at is None
+    assert feedback.last_error == "Test Error"
+    assert feedback.started_attempts_count == 5
+    assert feedback.processing_expires_at is None
+    assert feedback.processing_token is None

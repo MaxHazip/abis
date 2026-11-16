@@ -104,7 +104,7 @@ def check_unsuccessful_sent_attempt(
 
             return False
 
-        set_feedback_status_next_retry(feedback)
+        set_feedback_status_next_retry(feedback, error)
 
         feedback.save()
 
@@ -119,7 +119,7 @@ def task_recovery(
 
         feedback = Feedback.objects.select_for_update(nowait=True).get(id=feedback_id)
 
-        if (feedback.status == Feedback.Status.PROCESSING):
+        if (feedback.status != Feedback.Status.PROCESSING):
             return False
 
         if (feedback.processing_expires_at is None or timezone.now() < feedback.processing_expires_at):

@@ -452,7 +452,7 @@ def test_task_recovery_future_task(
 
     feedback.refresh_from_db()
 
-    init_feedback = feedback
+    init_feedback = copy(feedback)
 
     assert not task_recovery(feedback_id=feedback.id, error="Test Error")
 
@@ -485,3 +485,46 @@ def test_task_retry_no_more_attempts(
     assert feedback.started_attempts_count == 5
     assert feedback.processing_expires_at is None
     assert feedback.processing_token is None
+
+@pytest.mark.django_db
+def test_task_retry_not_processing(
+    feedback: Feedback
+):
+
+    feedback.processing_expires_at = timezone.now() - timedelta(minutes=10)
+    
+    feedback.save()
+
+    init_feedback = copy(feedback)
+
+    assert not task_recovery(feedback_id=feedback.id, error="Test Error")
+
+    feedback.refresh_from_db()
+
+    assert feedback.processing_expires_at == init_feedback.processing_expires_at
+    assert feedback.status == init_feedback.status
+    assert feedback.next_retry_at == init_feedback.next_retry_at
+    assert feedback.last_error == init_feedback.last_error
+    assert feedback.processing_token == init_feedback.processing_token
+
+@pytest.mark.django_db
+def test_task_retry_processing_expires_none(
+    feedback: Feedback
+):
+
+    feedback.status = Feedback.Status.PROCESSING
+    feedback.processing_expires_at = None
+
+    feedback.save()
+
+    init_feedback = copy(feedback)
+
+    assert not task_recovery(feedback_id=feedback.id, error="Test Error")
+
+    feedback.refresh_from_db()
+    
+    assert feedback.processing_expires_at == init_feedback.processing_expires_at
+    assert feedback.status == init_feedback.status
+    assert feedback.next_retry_at == init_feedback.next_retry_at
+    assert feedback.last_error == init_feedback.last_error
+    assert feedback.processing_token == init_feedback.processing_token

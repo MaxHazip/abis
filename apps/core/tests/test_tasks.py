@@ -421,6 +421,7 @@ def test_task_recovery(
     feedback.status = Feedback.Status.PROCESSING
     feedback.processing_expires_at = timezone.now() - timedelta(minutes=10)
     feedback.started_attempts_count = 2
+    feedback.processing_token = uuid.uuid4()
 
     feedback.save()
 
@@ -447,6 +448,7 @@ def test_task_recovery_future_task(
 
     feedback.status = Feedback.Status.PROCESSING
     feedback.processing_expires_at = timezone.now() + timedelta(minutes=10)
+    feedback.processing_token = uuid.uuid4()
 
     feedback.save()
 
@@ -458,6 +460,7 @@ def test_task_recovery_future_task(
 
     feedback.refresh_from_db()
 
+    assert feedback.started_attempts_count == 0
     assert feedback.processing_expires_at == init_feedback.processing_expires_at
     assert feedback.status == init_feedback.status
     assert feedback.next_retry_at == init_feedback.next_retry_at
@@ -472,6 +475,7 @@ def test_task_retry_no_more_attempts(
     feedback.started_attempts_count = 5
     feedback.processing_expires_at = timezone.now() - timedelta(minutes=5)
     feedback.status = Feedback.Status.PROCESSING
+    feedback.processing_token = uuid.uuid4()
 
     feedback.save()
 
@@ -506,6 +510,7 @@ def test_task_retry_not_processing(
     assert feedback.next_retry_at == init_feedback.next_retry_at
     assert feedback.last_error == init_feedback.last_error
     assert feedback.processing_token == init_feedback.processing_token
+    assert feedback.started_attempts_count == 0
 
 @pytest.mark.django_db
 def test_task_retry_processing_expires_none(
@@ -514,6 +519,7 @@ def test_task_retry_processing_expires_none(
 
     feedback.status = Feedback.Status.PROCESSING
     feedback.processing_expires_at = None
+    feedback.processing_token = uuid.uuid4()
 
     feedback.save()
 
@@ -528,3 +534,4 @@ def test_task_retry_processing_expires_none(
     assert feedback.next_retry_at == init_feedback.next_retry_at
     assert feedback.last_error == init_feedback.last_error
     assert feedback.processing_token == init_feedback.processing_token
+    assert feedback.started_attempts_count == 0

@@ -194,3 +194,15 @@ def send_feedback_notification_task(
 
         return f"Письма по заявке #{feedback_id} успешно обработаны"
 
+def find_tasks_for_retry():
+
+    feedbacks = (Feedback.objects
+                 .filter(Feedback.status == Feedback.Status.PROCESSING)
+                 .filter(Feedback.processing_token >= timezone.now())
+                 .order_by(Feedback.next_retry_at)[:100]
+                )
+
+    feedbacks_id = (feedback.id for feedback in feedbacks)
+
+    return feedbacks_id
+

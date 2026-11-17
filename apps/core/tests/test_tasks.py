@@ -87,6 +87,7 @@ def create_feedbacks_for_pereodics_tasks():
     feedback1 = copy(feedback)
     feedback1.status = Feedback.Status.PROCESSING
     feedback1.processing_expires_at = timezone.now() - timedelta(minutes=10)
+    feedback1.started_attempts_count = 1
     feedback1.save()
     feedback1.refresh_from_db()
 
@@ -99,9 +100,10 @@ def create_feedbacks_for_pereodics_tasks():
     feedback2.refresh_from_db()
 
     feedback3 = copy(feedback)
-    feedback3.status = Feedback.Status.PENDING
+    feedback3.status = Feedback.Status.PROCESSING
     feedback3.processing_expires_at = timezone.now() + timedelta(minutes=60)
     feedback3.phone_number = "+79992345678"
+    feedback3.started_attempts_count = 1
     feedback3.save()
     feedback3.refresh_from_db()
 
@@ -627,18 +629,35 @@ def test_periodic_processing_task(
     create_feedbacks_for_pereodics_tasks: list[Feedback]
 ):
 
+    init_third_task = create_feedbacks_for_pereodics_tasks[2]
+
     created_tasks_ids = []
 
     for task in create_feedbacks_for_pereodics_tasks:
         created_tasks_ids.append(task.id)
 
+    before_time = timezone.now() + timedelta(minutes=5)
+
     assert periodic_processing_task() == 2
+
+    after_time = timezone.now() + timedelta(minutes=5)
 
     for task in create_feedbacks_for_pereodics_tasks:
         task.refresh_from_db()
 
-        if (task.id == created_tasks_ids[0]): assert task.status == Feedback.Status.PENDING
-        elif (task.id == created_tasks_ids[1]): assert task.status == Feedback.Status.FAILED
-        elif (task.id == created_tasks_ids[2]): assert task.status == Feedback.Status.PROCESSING
+        if (task.id == created_tasks_ids[0]):
+            assert task.status == Feedback.Status.PENDING
+            assert task.next_retry_at <= after_time
+            assert task.next_retry_at > before_time
+            assert task.last_error == "Processing deadline exceeded"
+            assert task.processing_expires_at == None
 
-    
+        elif (task.id == created_tasks_ids[1]): 
+            assert task.status == Feedback.Status.FAILED
+            assert task.next_retry_at is None
+            assert task.last_error == "Processing deadline exceeded"
+            assert task.processing_expires_at == None
+
+        elif (task.id == created_tasks_ids[2]): 
+            assert task.status == Feedback.Status.PROCESSING
+            assert task.processing_expires_at == init_third_task.processing_expires_at

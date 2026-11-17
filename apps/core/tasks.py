@@ -201,7 +201,7 @@ def find_stuck_feedback_ids():
 
     return list(feedbacks_id)
 
-@shared_task(bind=True, default_retry_delay=60)
+@shared_task(default_retry_delay=60)
 def periodic_processing_task():
 
     stuck_tasks_ids = find_stuck_feedback_ids()

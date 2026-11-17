@@ -587,6 +587,4 @@ def test_find_tasks_for_retry(
 
     tasks_ids = find_stuck_feedback_ids()
 
-    assert {created_tasks_ids[0], created_tasks_ids[4]}.issubset(tasks_ids)
-    assert not {created_tasks_ids[1], created_tasks_ids[2], created_tasks_ids[3]}.issubset(tasks_ids)
-    assert tasks_ids[0] == created_tasks_ids[4] and tasks_ids[1] == created_tasks_ids[0]
+    assert tasks_ids == [created_tasks_ids[4], created_tasks_ids[0]]

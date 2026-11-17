@@ -4,7 +4,7 @@ from apps.core.tasks import (
     mark_feedback_as_sent, 
     check_unsuccessful_sent_attempt, 
     task_recovery,
-    find_tasks_for_retry
+    find_stuck_feedback_ids
 )
 from apps.core.models import Feedback
 from django.utils import timezone
@@ -585,7 +585,7 @@ def test_find_tasks_for_retry(
         created_tasks_ids.append(task.id)
 
 
-    tasks_ids = find_tasks_for_retry()
+    tasks_ids = find_stuck_feedback_ids()
 
     assert {created_tasks_ids[0], created_tasks_ids[4]}.issubset(tasks_ids)
     assert not {created_tasks_ids[1], created_tasks_ids[2], created_tasks_ids[3]}.issubset(tasks_ids)

@@ -131,10 +131,6 @@ def task_recovery(
 
         return True
 
-
-
-        
-
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def send_feedback_notification_task(
     self,
@@ -206,3 +202,23 @@ def find_stuck_feedback_ids():
 
     return list(feedbacks_id)
 
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def periodic_processing_task():
+
+    stuck_tasks_ids = find_stuck_feedback_ids()
+
+    succesfull_tasks_count = 0
+
+    for task_id in stuck_tasks_ids:
+        try:
+            if (    
+                task_recovery(
+                    feedback_id=task_id,
+                    error="Some Error"
+                )
+            ):
+                succesfull_tasks_count += 1
+        except OperationalError:
+            continue
+
+    return succesfull_tasks_count

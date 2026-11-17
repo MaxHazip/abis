@@ -4,7 +4,8 @@ from apps.core.tasks import (
     mark_feedback_as_sent, 
     check_unsuccessful_sent_attempt, 
     task_recovery,
-    find_stuck_feedback_ids
+    find_stuck_feedback_ids,
+    periodic_processing_task
 )
 from apps.core.models import Feedback
 from django.utils import timezone
@@ -73,6 +74,38 @@ def create_feedbacks():
 
     return [feedback1, feedback2, feedback3, feedback4, feedback5]
 
+@pytest.fixture
+def create_feedbacks_for_pereodics_tasks():
+
+    feedback = Feedback(
+        last_name="Луков",
+        first_name="Михаил",
+        phone_number="+79233243254",
+        privacy=True
+    )
+
+    feedback1 = copy(feedback)
+    feedback1.status = Feedback.Status.PROCESSING
+    feedback1.processing_expires_at = timezone.now() - timedelta(minutes=10)
+    feedback1.save()
+    feedback1.refresh_from_db()
+
+    feedback2 = copy(feedback)
+    feedback2.status = Feedback.Status.PROCESSING
+    feedback2.processing_expires_at = timezone.now() - timedelta(minutes=5)
+    feedback2.phone_number = "+79991234567"
+    feedback2.started_attempts_count = 5
+    feedback2.save()
+    feedback2.refresh_from_db()
+
+    feedback3 = copy(feedback)
+    feedback3.status = Feedback.Status.PENDING
+    feedback3.processing_expires_at = timezone.now() + timedelta(minutes=60)
+    feedback3.phone_number = "+79992345678"
+    feedback3.save()
+    feedback3.refresh_from_db()
+
+    return [feedback1, feedback2, feedback3]
 
 
 @pytest.mark.django_db
@@ -588,3 +621,24 @@ def test_find_tasks_for_retry(
     tasks_ids = find_stuck_feedback_ids()
 
     assert tasks_ids == [created_tasks_ids[4], created_tasks_ids[0]]
+
+@pytest.mark.django_db
+def test_periodic_processing_task(
+    create_feedbacks_for_pereodics_tasks: list[Feedback]
+):
+
+    created_tasks_ids = []
+
+    for task in create_feedbacks_for_pereodics_tasks:
+        created_tasks_ids.append(task.id)
+
+    assert periodic_processing_task() == 2
+
+    for task in create_feedbacks_for_pereodics_tasks:
+        task.refresh_from_db()
+
+        if (task.id == created_tasks_ids[0]): assert task.status == Feedback.Status.PENDING
+        elif (task.id == created_tasks_ids[1]): assert task.status == Feedback.Status.FAILED
+        elif (task.id == created_tasks_ids[2]): assert task.status == Feedback.Status.PROCESSING
+
+    

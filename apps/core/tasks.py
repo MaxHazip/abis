@@ -195,14 +195,13 @@ def find_stuck_feedback_ids():
     feedbacks_id = (Feedback.objects
                  .filter(status=Feedback.Status.PROCESSING)
                  .filter(processing_expires_at__lte=timezone.now())
-                 .order_by("id")
-                 .order_by('processing_expires_at')
+                 .order_by('processing_expires_at', 'id')
                  .values_list("id" ,flat=True)[:100]
                 )
 
     return list(feedbacks_id)
 
-@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+@shared_task(bind=True, default_retry_delay=60)
 def periodic_processing_task():
 
     stuck_tasks_ids = find_stuck_feedback_ids()
@@ -214,11 +213,17 @@ def periodic_processing_task():
             if (    
                 task_recovery(
                     feedback_id=task_id,
-                    error="Some Error"
+                    error="Processing deadline exceeded"
                 )
             ):
                 succesfull_tasks_count += 1
-        except OperationalError:
-            continue
+        except OperationalError as e:
+            pgcode = getattr(e.__cause__, 'pgcode', None)
+
+            if pgcode == '55P03':
+                continue
+            else:
+                raise
+
 
     return succesfull_tasks_count

@@ -196,13 +196,12 @@ def send_feedback_notification_task(
 
 def find_tasks_for_retry():
 
-    feedbacks = (Feedback.objects
-                 .filter(Feedback.status == Feedback.Status.PROCESSING)
-                 .filter(Feedback.processing_token >= timezone.now())
-                 .order_by(Feedback.next_retry_at)[:100]
+    feedbacks_id = (Feedback.objects
+                 .filter(status=Feedback.Status.PROCESSING)
+                 .filter(processing_expires_at__lte=timezone.now())
+                 .order_by('processing_expires_at')
+                 .values_list("id" ,flat=True)[:100]
                 )
-
-    feedbacks_id = (feedback.id for feedback in feedbacks)
 
     return feedbacks_id
 

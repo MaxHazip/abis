@@ -1,11 +1,17 @@
 import pytest
-from apps.core.tasks import catch_bid, mark_feedback_as_sent, check_unsuccessful_sent_attempt, task_recovery
+from apps.core.tasks import (
+    catch_bid, 
+    mark_feedback_as_sent, 
+    check_unsuccessful_sent_attempt, 
+    task_recovery,
+    find_tasks_for_retry
+)
 from apps.core.models import Feedback
 from django.utils import timezone
 from datetime import timedelta
 import uuid
 import threading
-from django.db import transaction, connection, close_old_connections, connections
+from django.db import transaction, close_old_connections, connections
 import queue
 from copy import copy
 
@@ -22,17 +28,51 @@ def feedback():
     return feedback
 
 @pytest.fixture
-def feedback_with_future_retry():
+def create_feedbacks():
 
-    feedback = Feedback.objects.create(
+    feedback = Feedback(
         last_name="Луков",
         first_name="Михаил",
         phone_number="+79233243254",
-        privacy=True,
-        next_retry_at= timezone.now() + timedelta(minutes=5)
+        privacy=True
     )
-    
-    return feedback
+
+    feedback1 = copy(feedback)
+    feedback1.status = Feedback.Status.PROCESSING
+    feedback1.processing_expires_at = timezone.now() - timedelta(minutes=60)
+    feedback1.save()
+    feedback1.refresh_from_db()
+
+    feedback2 = copy(feedback)
+    feedback2.status = Feedback.Status.PROCESSING
+    feedback2.processing_expires_at = timezone.now() + timedelta(minutes=30)
+    feedback2.phone_number = "+79991234567"
+    feedback2.save()
+    feedback2.refresh_from_db()
+
+    feedback3 = copy(feedback)
+    feedback3.status = Feedback.Status.PENDING
+    feedback3.processing_expires_at = timezone.now() - timedelta(minutes=120)
+    feedback3.phone_number = "+79992345678"
+    feedback3.save()
+    feedback3.refresh_from_db()
+
+    feedback4 = copy(feedback)
+    feedback4.status = Feedback.Status.PROCESSING
+    feedback4.processing_expires_at = None
+    feedback4.phone_number = "+79993456789"
+    feedback4.save()
+    feedback4.refresh_from_db()
+
+    feedback5 = copy(feedback)
+    feedback5.status = Feedback.Status.PROCESSING
+    feedback5.processing_expires_at = timezone.now() - timedelta(minutes=90)
+    feedback5.phone_number = "+79994567890"
+    feedback5.save()
+    feedback5.refresh_from_db()
+
+    return [feedback1, feedback2, feedback3, feedback4, feedback5]
+
 
 
 @pytest.mark.django_db
@@ -80,25 +120,23 @@ def test_catch_bid_already_processing(
 
 @pytest.mark.django_db
 def test_catch_bid_early_time_retry(
-    feedback_with_future_retry: Feedback
-):
+    feedback: Feedback
+):  
+    feedback.next_retry_at = timezone.now() + timedelta(minutes=5)
+    feedback.save()    
 
-    initial_feedback_time = feedback_with_future_retry.next_retry_at
-    initial_feedback_status = feedback_with_future_retry.status
-    initial_feedback_attempts_count = feedback_with_future_retry.started_attempts_count
-    initial_feedback_token = feedback_with_future_retry.processing_token
-    initial_feedback_processing_expires_at = feedback_with_future_retry.processing_expires_at
+    init_feedback = copy(feedback)
 
-    token = catch_bid(feedback_id=feedback_with_future_retry.id)
+    token = catch_bid(feedback_id=feedback.id)
 
-    feedback_with_future_retry.refresh_from_db()
+    feedback.refresh_from_db()
 
     assert token is None
-    assert feedback_with_future_retry.status == initial_feedback_status
-    assert feedback_with_future_retry.started_attempts_count == initial_feedback_attempts_count
-    assert feedback_with_future_retry.next_retry_at == initial_feedback_time
-    assert feedback_with_future_retry.processing_token == initial_feedback_token
-    assert feedback_with_future_retry.processing_expires_at == initial_feedback_processing_expires_at
+    assert feedback.status == init_feedback.status
+    assert feedback.started_attempts_count == init_feedback.started_attempts_count
+    assert feedback.next_retry_at == init_feedback.next_retry_at
+    assert feedback.processing_token == init_feedback.processing_token
+    assert feedback.processing_expires_at == init_feedback.processing_expires_at
 
 @pytest.mark.django_db
 def test_catch_bid_too_many_attempts(
@@ -535,3 +573,20 @@ def test_task_retry_processing_expires_none(
     assert feedback.last_error == init_feedback.last_error
     assert feedback.processing_token == init_feedback.processing_token
     assert feedback.started_attempts_count == 0
+
+@pytest.mark.django_db
+def test_find_tasks_for_retry(
+    create_feedbacks: list[Feedback]
+):
+
+    created_tasks_ids = []
+
+    for task in create_feedbacks:
+        created_tasks_ids.append(task.id)
+
+
+    tasks_ids = find_tasks_for_retry()
+
+    assert {created_tasks_ids[0], created_tasks_ids[4]}.issubset(tasks_ids)
+    assert not {created_tasks_ids[1], created_tasks_ids[2], created_tasks_ids[3]}.issubset(tasks_ids)
+    assert tasks_ids[0] == created_tasks_ids[4] and tasks_ids[1] == created_tasks_ids[0]

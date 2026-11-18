@@ -15,6 +15,8 @@ import threading
 from django.db import transaction, close_old_connections, connections
 import queue
 from copy import copy
+from django.db import OperationalError
+from unittest.mock import patch, Mock
 
 @pytest.fixture
 def feedback():
@@ -88,6 +90,7 @@ def create_feedbacks_for_pereodics_tasks():
     feedback1.status = Feedback.Status.PROCESSING
     feedback1.processing_expires_at = timezone.now() - timedelta(minutes=10)
     feedback1.started_attempts_count = 1
+    feedback1.processing_token = uuid.uuid4()
     feedback1.save()
     feedback1.refresh_from_db()
 
@@ -96,6 +99,7 @@ def create_feedbacks_for_pereodics_tasks():
     feedback2.processing_expires_at = timezone.now() - timedelta(minutes=5)
     feedback2.phone_number = "+79991234567"
     feedback2.started_attempts_count = 5
+    feedback2.processing_token = uuid.uuid4()
     feedback2.save()
     feedback2.refresh_from_db()
 
@@ -104,6 +108,7 @@ def create_feedbacks_for_pereodics_tasks():
     feedback3.processing_expires_at = timezone.now() + timedelta(minutes=60)
     feedback3.phone_number = "+79992345678"
     feedback3.started_attempts_count = 1
+    feedback3.processing_token = uuid.uuid4()
     feedback3.save()
     feedback3.refresh_from_db()
 
@@ -629,7 +634,7 @@ def test_periodic_processing_task(
     create_feedbacks_for_pereodics_tasks: list[Feedback]
 ):
 
-    init_third_task = create_feedbacks_for_pereodics_tasks[2]
+    init_third_task = copy(create_feedbacks_for_pereodics_tasks[2])
 
     created_tasks_ids = []
 
@@ -651,13 +656,90 @@ def test_periodic_processing_task(
             assert task.next_retry_at > before_time
             assert task.last_error == "Processing deadline exceeded"
             assert task.processing_expires_at == None
+            assert task.processing_token == None
 
         elif (task.id == created_tasks_ids[1]): 
             assert task.status == Feedback.Status.FAILED
             assert task.next_retry_at is None
             assert task.last_error == "Processing deadline exceeded"
             assert task.processing_expires_at == None
+            assert task.processing_token == None
 
         elif (task.id == created_tasks_ids[2]): 
             assert task.status == Feedback.Status.PROCESSING
             assert task.processing_expires_at == init_third_task.processing_expires_at
+            assert task.processing_token == init_third_task.processing_token
+
+@pytest.mark.django_db
+def test_periodic_processing_task_lock_exception():
+
+    with patch(
+        "apps.core.tasks.find_stuck_feedback_ids",
+        return_value=[1, 2, 3]
+    ):
+
+        pg_error = Exception()
+        pg_error.pgcode = "55P03"
+
+        db_error = OperationalError("Ошибка блокировки")
+        db_error.__cause__ = pg_error
+
+        with patch(
+            "apps.core.tasks.task_recovery",
+            side_effect=[
+                True, 
+                db_error,
+                True
+            ]
+        ):
+
+            tasks_count = periodic_processing_task()
+
+            assert tasks_count == 2
+
+@pytest.mark.django_db
+def test_periodic_processing_task_doesnt_exists_exception():
+
+    with patch(
+        "apps.core.tasks.find_stuck_feedback_ids",
+        return_value=[1, 2, 3]
+    ):
+
+        pg_error = Feedback.DoesNotExist
+
+        with patch(
+            "apps.core.tasks.task_recovery",
+            side_effect=[
+                True, 
+                pg_error,
+                True
+            ]
+        ):
+
+            tasks_count = periodic_processing_task()
+
+            assert tasks_count == 2
+
+@pytest.mark.django_db
+def test_periodic_processing_task_doesnt_exists_exception():
+
+    with patch(
+        "apps.core.tasks.find_stuck_feedback_ids",
+        return_value=[1, 2, 3]
+    ):
+
+        pg_error = OperationalError("Ошибка блокировки")
+
+        with patch(
+            "apps.core.tasks.task_recovery",
+            side_effect=[
+                True, 
+                pg_error,
+                False
+            ]
+        ):
+
+            tasks_count = periodic_processing_task()
+
+            assert tasks_count == 2
+

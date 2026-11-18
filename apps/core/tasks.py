@@ -218,12 +218,14 @@ def periodic_processing_task():
             ):
                 succesfull_tasks_count += 1
         except OperationalError as e:
-            pgcode = getattr(e.__cause__, 'pgcode', None)
+            pgcode = getattr(e.__cause__, 'pgcode', None) or getattr(e.__cause__, 'sqlstate', None)
 
             if pgcode == '55P03':
                 continue
             else:
                 raise
+        except Feedback.DoesNotExist:
+            continue
 
 
     return succesfull_tasks_count

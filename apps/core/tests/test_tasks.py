@@ -691,11 +691,12 @@ def test_periodic_processing_task_lock_exception():
                 db_error,
                 True
             ]
-        ):
+        ) as mock_recovery:
 
             tasks_count = periodic_processing_task()
 
             assert tasks_count == 2
+            assert mock_recovery.call_count == 3
 
 @pytest.mark.django_db
 def test_periodic_processing_task_doesnt_exists_exception():
@@ -714,21 +715,22 @@ def test_periodic_processing_task_doesnt_exists_exception():
                 pg_error,
                 True
             ]
-        ):
+        ) as mock_recovery:
 
             tasks_count = periodic_processing_task()
 
             assert tasks_count == 2
+            assert mock_recovery.call_count == 3
 
 @pytest.mark.django_db
-def test_periodic_processing_task_doesnt_exists_exception():
+def test_periodic_processing_task_other_exception():
 
     with patch(
         "apps.core.tasks.find_stuck_feedback_ids",
         return_value=[1, 2, 3]
     ):
 
-        pg_error = OperationalError("Ошибка блокировки")
+        pg_error = OperationalError("Ошибка БД")
 
         with patch(
             "apps.core.tasks.task_recovery",
@@ -737,9 +739,12 @@ def test_periodic_processing_task_doesnt_exists_exception():
                 pg_error,
                 False
             ]
-        ):
+        ) as mock_recovery:
 
-            tasks_count = periodic_processing_task()
+            tasks_count = 0
 
-            assert tasks_count == 2
+            with pytest.raises(OperationalError, match="Ошибка БД"):
+                periodic_processing_task()
+
+            assert mock_recovery.call_count == 2
 

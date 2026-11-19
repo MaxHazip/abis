@@ -235,9 +235,9 @@ def find_applications_to_resending():
     feedbacks = (Feedback.objects
                  .filter(status=Feedback.Status.PENDING)
                  .filter(next_retry_at__lte=timezone.now())
-                 .exclude(next_retry_at=None)
-                 .exclude(started_attempts_count=5)
-                 .order_by("next_retry_at", "id")[:100]
+                 .filter(started_attempts_count__lt=5)
+                 .order_by("next_retry_at", "id")
+                 .values_list("id", flat=True)[:100]
                 )    
 
-    return feedbacks
+    return list(feedbacks)

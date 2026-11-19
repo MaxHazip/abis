@@ -150,21 +150,29 @@ def pending_feedbacks():
 
     feedback4 = copy(feedback)
     feedback4.status = Feedback.Status.PENDING
-    feedback4.next_retry_at = timezone.now() + timedelta(minutes=60)
-    feedback4.started_attempts_count = 3
-    feedback4.phone_number = "+79591234567"
+    feedback4.next_retry_at = timezone.now() - timedelta(minutes=10)
+    feedback4.started_attempts_count = 5
+    feedback4.phone_number = "+79391234567"
     feedback4.save()
     feedback4.refresh_from_db()
 
     feedback5 = copy(feedback)
     feedback5.status = Feedback.Status.PENDING
-    feedback5.next_retry_at = timezone.now() - timedelta(minutes=90)
-    feedback5.last_name = "Шишкин"
-    feedback5.first_name = "Владимир"
-    feedback5.started_attempts_count = 4
-    feedback5.phone_number = "+79494567890"
+    feedback5.next_retry_at = timezone.now() + timedelta(minutes=60)
+    feedback5.started_attempts_count = 3
+    feedback5.phone_number = "+79591234567"
     feedback5.save()
     feedback5.refresh_from_db()
+
+    feedback6 = copy(feedback)
+    feedback6.status = Feedback.Status.PENDING
+    feedback6.next_retry_at = timezone.now() - timedelta(minutes=90)
+    feedback6.last_name = "Шишкин"
+    feedback6.first_name = "Владимир"
+    feedback6.started_attempts_count = 4
+    feedback6.phone_number = "+79494567890"
+    feedback6.save()
+    feedback6.refresh_from_db()
 
     return [feedback1, feedback2, feedback3, feedback4, feedback5]
 
@@ -805,4 +813,4 @@ def test_find_applications_to_resending(
     pending_feedbacks: list[Feedback]
 ):
 
-    assert list(find_applications_to_resending()) == [pending_feedbacks[4], pending_feedbacks[0]]
+    assert find_applications_to_resending() == [pending_feedbacks[5].id, pending_feedbacks[0].id]

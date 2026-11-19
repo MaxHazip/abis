@@ -229,3 +229,15 @@ def periodic_processing_task():
 
 
     return succesfull_tasks_count
+
+def find_applications_to_resending():
+
+    feedbacks = (Feedback.objects
+                 .filter(status=Feedback.Status.PENDING)
+                 .filter(next_retry_at__lte=timezone.now())
+                 .exclude(next_retry_at=None)
+                 .exclude(started_attempts_count=5)
+                 .order_by("next_retry_at", "id")[:100]
+                )    
+
+    return feedbacks

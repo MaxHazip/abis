@@ -5,7 +5,8 @@ from apps.core.tasks import (
     check_unsuccessful_sent_attempt, 
     task_recovery,
     find_stuck_feedback_ids,
-    periodic_processing_task
+    periodic_processing_task,
+    find_applications_to_resending
 )
 from apps.core.models import Feedback
 from django.utils import timezone
@@ -113,6 +114,59 @@ def create_feedbacks_for_pereodics_tasks():
     feedback3.refresh_from_db()
 
     return [feedback1, feedback2, feedback3]
+
+@pytest.fixture
+def pending_feedbacks():
+
+    feedback = Feedback(
+        last_name="Луков",
+        first_name="Михаил",
+        phone_number="+79233243254",
+        privacy=True
+    )
+
+    feedback1 = copy(feedback)
+    feedback1.status = Feedback.Status.PENDING
+    feedback1.next_retry_at = timezone.now() - timedelta(minutes=10)
+    feedback1.started_attempts_count = 2
+    feedback1.phone_number = "+79991234563"
+    feedback1.save()
+    feedback1.refresh_from_db()
+
+    feedback2 = copy(feedback)
+    feedback2.status = Feedback.Status.PROCESSING
+    feedback2.processing_expires_at = timezone.now() + timedelta(minutes=30)
+    feedback2.phone_number = "+79991234567"
+    feedback2.save()
+    feedback2.refresh_from_db()
+
+    feedback3 = copy(feedback)
+    feedback3.status = Feedback.Status.PENDING
+    feedback3.next_retry_at = None
+    feedback3.started_attempts_count = 5
+    feedback3.phone_number = "+79391234567"
+    feedback3.save()
+    feedback3.refresh_from_db()
+
+    feedback4 = copy(feedback)
+    feedback4.status = Feedback.Status.PENDING
+    feedback4.next_retry_at = timezone.now() + timedelta(minutes=60)
+    feedback4.started_attempts_count = 3
+    feedback4.phone_number = "+79591234567"
+    feedback4.save()
+    feedback4.refresh_from_db()
+
+    feedback5 = copy(feedback)
+    feedback5.status = Feedback.Status.PENDING
+    feedback5.next_retry_at = timezone.now() - timedelta(minutes=90)
+    feedback5.last_name = "Шишкин"
+    feedback5.first_name = "Владимир"
+    feedback5.started_attempts_count = 4
+    feedback5.phone_number = "+79494567890"
+    feedback5.save()
+    feedback5.refresh_from_db()
+
+    return [feedback1, feedback2, feedback3, feedback4, feedback5]
 
 
 @pytest.mark.django_db
@@ -746,3 +800,9 @@ def test_periodic_processing_task_other_exception():
 
             assert mock_recovery.call_count == 2
 
+@pytest.mark.django_db
+def test_find_applications_to_resending(
+    pending_feedbacks: list[Feedback]
+):
+
+    assert list(find_applications_to_resending()) == [pending_feedbacks[4], pending_feedbacks[0]]

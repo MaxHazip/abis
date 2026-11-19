@@ -14,7 +14,6 @@ from pathlib import Path
 import environ
 import dj_database_url
 import os
-from config.celery import app
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -148,7 +147,7 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
-CELERY_SCHEDULER = app.conf.beat_schedule = {
+CELERY_BEAT_SCHEDULE = {
     "retry-tasks": {
 
         "task": "apps.core.tasks.periodic_processing_task",

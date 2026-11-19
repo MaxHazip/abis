@@ -103,7 +103,7 @@ services:
     networks:
       - app-network
 
-  celeryBeat:
+  celery-beat:
     build: .
     image: celery_beat
     container_name: abis_celery_beat

@@ -174,7 +174,7 @@ def pending_feedbacks():
     feedback6.save()
     feedback6.refresh_from_db()
 
-    return [feedback1, feedback2, feedback3, feedback4, feedback5]
+    return [feedback1, feedback2, feedback3, feedback4, feedback5, feedback6]
 
 
 @pytest.mark.django_db

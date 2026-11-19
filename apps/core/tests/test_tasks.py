@@ -741,8 +741,6 @@ def test_periodic_processing_task_other_exception():
             ]
         ) as mock_recovery:
 
-            tasks_count = 0
-
             with pytest.raises(OperationalError, match="Ошибка БД"):
                 periodic_processing_task()
 

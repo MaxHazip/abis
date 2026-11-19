@@ -103,6 +103,26 @@ services:
     networks:
       - app-network
 
+  celeryBeat:
+    build: .
+    image: celery_beat
+    container_name: abis_celery_beat
+    restart: unless-stopped
+    command: celery -A config beat -l info
+    volumes:
+     - .:/app
+    environment:
+      - REDIS_URL=redis://redis:6379/1
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - POSTGRES_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+
 volumes:
   postgres_data:
   static_volume:

@@ -131,11 +131,21 @@ def task_recovery(
 
         return True
 
-@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+@shared_task(default_retry_delay=60)
 def send_feedback_notification_task(
-    self,
     feedback_id
 ):
+
+    try: 
+        token = catch_bid(feedback_id=feedback_id)
+
+        if token is None:
+
+            return False
+
+    except Feedback.DoesNotExist:
+
+        return False
 
     try:
 
@@ -157,16 +167,13 @@ def send_feedback_notification_task(
         f"Сообщение:\n{feedback.text or 'Без текста'}"
     )
 
-    try:
-        send_mail(
-            subject=subject_admin,
-            message=message_admin,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[admin_email],
-            fail_silently=False
-        )
-    except Exception as exc:
-        raise self.retry(exc=exc)
+    send_mail(
+        subject=subject_admin,
+        message=message_admin,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[admin_email],
+        fail_silently=False
+    )
 
     if feedback.email:
 
@@ -230,7 +237,7 @@ def periodic_processing_task():
 
     return succesfull_tasks_count
 
-def find_applications_to_resending():
+def find_feedback_ids_for_retry():
 
     feedbacks = (Feedback.objects
                  .filter(status=Feedback.Status.PENDING)
@@ -241,3 +248,4 @@ def find_applications_to_resending():
                 )    
 
     return list(feedbacks)
+

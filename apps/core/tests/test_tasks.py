@@ -6,7 +6,8 @@ from apps.core.tasks import (
     task_recovery,
     find_stuck_feedback_ids,
     periodic_processing_task,
-    find_applications_to_resending
+    find_feedback_ids_for_retry,
+    send_feedback_notification_task
 )
 from apps.core.models import Feedback
 from django.utils import timezone
@@ -176,6 +177,18 @@ def pending_feedbacks():
 
     return [feedback1, feedback2, feedback3, feedback4, feedback5, feedback6]
 
+@pytest.fixture
+def sent_feedback():
+
+    feedback = Feedback.objects.create(
+        last_name="Луков",
+        first_name="Михаил",
+        phone_number="+79233243254",
+        privacy=True,
+        status=Feedback.Status.SENT,
+    )
+
+    return feedback
 
 @pytest.mark.django_db
 def test_correct_catch_bid(
@@ -813,4 +826,16 @@ def test_find_applications_to_resending(
     pending_feedbacks: list[Feedback]
 ):
 
-    assert find_applications_to_resending() == [pending_feedbacks[5].id, pending_feedbacks[0].id]
+    assert find_feedback_ids_for_retry() == [pending_feedbacks[5].id, pending_feedbacks[0].id]
+
+@pytest.mark.django_db
+def test_send_feedback_notification_task_catch(
+    sent_feedback: Feedback
+):
+    with patch(
+        "apps.core.tasks.send_mail"
+    ) as mock_recovery:
+
+        assert not send_feedback_notification_task(sent_feedback.id)
+
+        mock_recovery.assert_not_called()

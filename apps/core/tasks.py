@@ -185,14 +185,6 @@ def send_feedback_notification_task(
 
             return False
 
-        result = mark_feedback_as_sent(
-            feedback_id=feedback_id,
-            processing_token=token
-        )
-
-        if not result:
-            return False
-
     except SMTPException as e:
         check_unsuccessful_sent_attempt(
             feedback_id=feedback.id,
@@ -206,6 +198,14 @@ def send_feedback_notification_task(
             processing_token=token,
             error=str(e)
         )
+        return False
+
+    result = mark_feedback_as_sent(
+        feedback_id=feedback_id,
+        processing_token=token
+    )
+
+    if not result:
         return False
 
     if feedback.email:

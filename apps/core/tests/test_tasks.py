@@ -1017,6 +1017,7 @@ def test_send_feedback_notification_task_op_error(
                 with pytest.raises(OperationalError, match="Database unavailable"):
                     send_feedback_notification_task(feedback_id=feedback.id)
 
-                    mock_check_unsuccessful_sent_attempt.assert_not_called()
+                mock_check_unsuccessful_sent_attempt.assert_not_called()
+                mock_send_mail.assert_called_once()
 
             

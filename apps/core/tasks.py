@@ -14,7 +14,6 @@ def catch_bid(
     try:
         with transaction.atomic():
 
-
             feedback = Feedback.objects.select_for_update(nowait=True).get(id=feedback_id)
             if (feedback.status != Feedback.Status.PENDING 
                 or (feedback.next_retry_at and timezone.now() < feedback.next_retry_at) 
@@ -131,7 +130,7 @@ def task_recovery(
 
         return True
 
-@shared_task(default_retry_delay=60)
+@shared_task()
 def send_feedback_notification_task(
     feedback_id
 ):
@@ -140,7 +139,6 @@ def send_feedback_notification_task(
         token = catch_bid(feedback_id=feedback_id)
 
         if token is None:
-
             return False
 
     except Feedback.DoesNotExist:
@@ -149,7 +147,7 @@ def send_feedback_notification_task(
 
     try:
 
-        feedback = Feedback.objects.get(pk=feedback_id)
+        feedback = Feedback.objects.get(id=feedback_id)
 
     except Feedback.DoesNotExist:
         return f"Заявка {feedback_id} не найдена в базе"
@@ -167,13 +165,26 @@ def send_feedback_notification_task(
         f"Сообщение:\n{feedback.text or 'Без текста'}"
     )
 
-    send_mail(
-        subject=subject_admin,
-        message=message_admin,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[admin_email],
-        fail_silently=False
-    )
+    try:
+
+        send_mail(
+            subject=subject_admin,
+            message=message_admin,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[admin_email],
+            fail_silently=False
+        )
+
+        result = mark_feedback_as_sent(
+            feedback_id=feedback_id,
+            processing_token=token
+        )
+
+        if not result:
+            return False
+
+    except Exception:
+        raise
 
     if feedback.email:
 
@@ -196,6 +207,8 @@ def send_feedback_notification_task(
             pass
 
         return f"Письма по заявке #{feedback_id} успешно обработаны"
+
+    
 
 def find_stuck_feedback_ids():
 

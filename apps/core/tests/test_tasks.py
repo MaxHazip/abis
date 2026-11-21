@@ -27,7 +27,7 @@ def feedback():
         last_name="Луков",
         first_name="Михаил",
         phone_number="+79233243254",
-        privacy=True
+        privacy=True,
     )
 
     return feedback
@@ -832,10 +832,63 @@ def test_find_applications_to_resending(
 def test_send_feedback_notification_task_catch(
     sent_feedback: Feedback
 ):
+
+    init_feedback = copy(sent_feedback)
+    
     with patch(
         "apps.core.tasks.send_mail"
-    ) as mock_recovery:
+    ) as mock_send_mail:
 
         assert not send_feedback_notification_task(sent_feedback.id)
 
-        mock_recovery.assert_not_called()
+        mock_send_mail.assert_not_called()
+
+        assert sent_feedback.status == init_feedback.status
+        assert sent_feedback.started_attempts_count == init_feedback.started_attempts_count
+        assert sent_feedback.processing_token == init_feedback.processing_token
+
+@pytest.mark.django_db
+def test_send_feedback_notification_task_success_sent(
+    feedback: Feedback
+):
+
+    feedback.email = "dsamkaaw@example.com"
+    feedback.save()
+
+    with patch(
+        "apps.core.tasks.send_mail"
+    ) as mock_send_mail:
+
+        assert send_feedback_notification_task(feedback_id=feedback.id)
+
+        feedback.refresh_from_db()
+
+        assert feedback.status == Feedback.Status.SENT
+        assert feedback.started_attempts_count == 1
+        assert feedback.processing_expires_at is None
+        assert feedback.processing_token is None
+        assert mock_send_mail.call_count == 2
+
+@pytest.mark.django_db
+def test_send_feedback_notification_task_old_token(
+    feedback: Feedback
+):
+
+    feedback.email = "dsamkaaw@example.com"
+    feedback.save()
+
+    with patch(
+        "apps.core.tasks.mark_feedback_as_sent",
+        return_value=False
+    ):
+        with patch(
+            "apps.core.tasks.send_mail",
+        ) as mock_send_mail:
+
+            assert not send_feedback_notification_task(feedback_id=feedback.id)
+
+            feedback.refresh_from_db()
+
+            assert feedback.status == Feedback.Status.PROCESSING
+            assert feedback.started_attempts_count == 1
+            assert mock_send_mail.call_count == 1

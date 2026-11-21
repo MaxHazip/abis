@@ -904,7 +904,7 @@ def test_send_feedback_notification_task_smtp_error(
     feedback.email = "dsamkaaw@example.com"
     feedback.save()
 
-    smtp_error = SMTPException()
+    smtp_error = SMTPException("SMTP connection failed")
 
     with patch(
         "apps.core.tasks.send_mail",
@@ -924,6 +924,8 @@ def test_send_feedback_notification_task_smtp_error(
         assert feedback.next_retry_at > before_time
         assert feedback.next_retry_at <= after_time
         assert feedback.processing_token is None
+        assert feedback.processing_expires_at is None
+        assert feedback.last_error == "SMTP connection failed"
         assert mock_send_mail.call_count == 1
 
 @pytest.mark.django_db
@@ -933,8 +935,6 @@ def test_send_feedback_notification_task_zero_emails(
 
     feedback.email = "dsamkaaw@example.com"
     feedback.save()
-
-    smtp_error = SMTPException()
 
     with patch(
         "apps.core.tasks.send_mail",
@@ -954,5 +954,38 @@ def test_send_feedback_notification_task_zero_emails(
         assert feedback.next_retry_at > before_time
         assert feedback.next_retry_at <= after_time
         assert feedback.processing_token is None
+        assert feedback.processing_expires_at is None
         assert feedback.last_error == "Send email error"
+        assert mock_send_mail.call_count == 1
+
+@pytest.mark.django_db
+def test_send_feedback_notification_task_timeout_error(
+    feedback: Feedback
+):
+
+    feedback.email = "dsamkaaw@example.com"
+    feedback.save()
+
+    timeout_error = TimeoutError("A connection attempt failed because the connected party did not properly respond after a period of time...")
+
+    with patch(
+        "apps.core.tasks.send_mail",
+        side_effect=timeout_error
+    ) as mock_send_mail:
+
+        before_time = timezone.now() + timedelta(minutes=5)
+        
+        assert not send_feedback_notification_task(feedback_id=feedback.id)
+
+        after_time = timezone.now() + timedelta(minutes=5)
+
+        feedback.refresh_from_db()
+
+        assert feedback.status == Feedback.Status.PENDING
+        assert feedback.started_attempts_count == 1
+        assert feedback.next_retry_at > before_time
+        assert feedback.next_retry_at <= after_time
+        assert feedback.processing_token is None
+        assert feedback.processing_expires_at is None
+        assert feedback.last_error == "A connection attempt failed because the connected party did not properly respond after a period of time..."
         assert mock_send_mail.call_count == 1

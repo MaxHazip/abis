@@ -6,6 +6,7 @@ from datetime import timedelta
 from django.utils import timezone
 from django.db import transaction, OperationalError
 import uuid
+from smtplib import SMTPException
 
 def catch_bid(
     feedback_id: int
@@ -167,13 +168,22 @@ def send_feedback_notification_task(
 
     try:
 
-        send_mail(
+        send_result = send_mail(
             subject=subject_admin,
             message=message_admin,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[admin_email],
             fail_silently=False
         )
+
+        if (send_result == 0):
+            check_unsuccessful_sent_attempt(
+                feedback_id=feedback.id,
+                processing_token=token,
+                error="Send email error"
+            )
+
+            return False
 
         result = mark_feedback_as_sent(
             feedback_id=feedback_id,
@@ -183,8 +193,13 @@ def send_feedback_notification_task(
         if not result:
             return False
 
-    except Exception:
-        raise
+    except SMTPException:
+        check_unsuccessful_sent_attempt(
+            feedback_id=feedback.id,
+            processing_token=token,
+            error="Send email error"
+        )
+        return False
 
     if feedback.email:
 

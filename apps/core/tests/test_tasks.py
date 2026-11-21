@@ -19,6 +19,7 @@ import queue
 from copy import copy
 from django.db import OperationalError
 from unittest.mock import patch, Mock
+from smtplib import SMTPException
 
 @pytest.fixture
 def feedback():
@@ -856,7 +857,8 @@ def test_send_feedback_notification_task_success_sent(
     feedback.save()
 
     with patch(
-        "apps.core.tasks.send_mail"
+        "apps.core.tasks.send_mail",
+        return_value=1
     ) as mock_send_mail:
 
         assert send_feedback_notification_task(feedback_id=feedback.id)
@@ -870,7 +872,7 @@ def test_send_feedback_notification_task_success_sent(
         assert mock_send_mail.call_count == 2
 
 @pytest.mark.django_db
-def test_send_feedback_notification_task_old_token(
+def test_send_feedback_notification_task_mark_false(
     feedback: Feedback
 ):
 
@@ -883,6 +885,7 @@ def test_send_feedback_notification_task_old_token(
     ):
         with patch(
             "apps.core.tasks.send_mail",
+            return_value=1
         ) as mock_send_mail:
 
             assert not send_feedback_notification_task(feedback_id=feedback.id)
@@ -892,3 +895,64 @@ def test_send_feedback_notification_task_old_token(
             assert feedback.status == Feedback.Status.PROCESSING
             assert feedback.started_attempts_count == 1
             assert mock_send_mail.call_count == 1
+
+@pytest.mark.django_db
+def test_send_feedback_notification_task_smtp_error(
+    feedback: Feedback
+):
+
+    feedback.email = "dsamkaaw@example.com"
+    feedback.save()
+
+    smtp_error = SMTPException()
+
+    with patch(
+        "apps.core.tasks.send_mail",
+        side_effect=smtp_error
+    ) as mock_send_mail:
+
+        before_time = timezone.now() + timedelta(minutes=5)
+        
+        assert not send_feedback_notification_task(feedback_id=feedback.id)
+
+        after_time = timezone.now() + timedelta(minutes=5)
+
+        feedback.refresh_from_db()
+
+        assert feedback.status == Feedback.Status.PENDING
+        assert feedback.started_attempts_count == 1
+        assert feedback.next_retry_at > before_time
+        assert feedback.next_retry_at <= after_time
+        assert feedback.processing_token is None
+        assert mock_send_mail.call_count == 1
+
+@pytest.mark.django_db
+def test_send_feedback_notification_task_zero_emails(
+    feedback: Feedback
+):
+
+    feedback.email = "dsamkaaw@example.com"
+    feedback.save()
+
+    smtp_error = SMTPException()
+
+    with patch(
+        "apps.core.tasks.send_mail",
+        return_value=0
+    ) as mock_send_mail:
+
+        before_time = timezone.now() + timedelta(minutes=5)
+        
+        assert not send_feedback_notification_task(feedback_id=feedback.id)
+
+        after_time = timezone.now() + timedelta(minutes=5)
+
+        feedback.refresh_from_db()
+
+        assert feedback.status == Feedback.Status.PENDING
+        assert feedback.started_attempts_count == 1
+        assert feedback.next_retry_at > before_time
+        assert feedback.next_retry_at <= after_time
+        assert feedback.processing_token is None
+        assert feedback.last_error == "Send email error"
+        assert mock_send_mail.call_count == 1

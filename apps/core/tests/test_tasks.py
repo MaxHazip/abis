@@ -989,3 +989,34 @@ def test_send_feedback_notification_task_timeout_error(
         assert feedback.processing_expires_at is None
         assert feedback.last_error == "A connection attempt failed because the connected party did not properly respond after a period of time..."
         assert mock_send_mail.call_count == 1
+
+@pytest.mark.django_db
+def test_send_feedback_notification_task_op_error(
+    feedback: Feedback
+):
+
+    feedback.email = "dsamkaaw@example.com"
+    feedback.save()
+
+    with patch(
+        "apps.core.tasks.send_mail",
+        return_value=1
+    ) as mock_send_mail:
+
+        op_error = OperationalError("Database unavailable")
+
+        with patch(
+            "apps.core.tasks.mark_feedback_as_sent",
+            side_effect=op_error
+        ):
+
+            with patch(
+                "apps.core.tasks.check_unsuccessful_sent_attempt"
+            ) as mock_check_unsuccessful_sent_attempt:
+
+                with pytest.raises(OperationalError, match="Database unavailable"):
+                    send_feedback_notification_task(feedback_id=feedback.id)
+
+                    mock_check_unsuccessful_sent_attempt.assert_not_called()
+
+            

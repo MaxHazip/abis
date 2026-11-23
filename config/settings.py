@@ -153,6 +153,12 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.core.tasks.periodic_processing_task",
         "schedule": 30.0
 
+    },
+    "pereodic_dispatch": {
+
+        "task": "apps.core.tasks.periodic_retry_dispatch_task",
+        "schedule": 30.0
+
     }
 }
 

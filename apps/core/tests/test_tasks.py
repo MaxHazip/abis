@@ -1066,6 +1066,7 @@ def test_periodic_retry_dispatch_task_connection_error():
         ) as mock_sent_feedback:
 
             with pytest.raises(ConnectionError, match="Redis connection Error"):
-                assert periodic_retry_dispatch_task() == 1
+                periodic_retry_dispatch_task()
 
             assert mock_sent_feedback.call_count == 2
+            assert 30 not in mock_sent_feedback.call_args_list

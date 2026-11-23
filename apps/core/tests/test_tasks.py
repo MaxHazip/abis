@@ -21,6 +21,7 @@ from copy import copy
 from django.db import OperationalError
 from unittest.mock import patch, call
 from smtplib import SMTPException
+from redis.exceptions import ConnectionError
 
 @pytest.fixture
 def feedback():
@@ -1043,29 +1044,28 @@ def test_periodic_retry_dispatch_task():
                 call(30)
             ]
 
-            mock_sent_feedback.assert_has_calls(expected_calls)
+            assert mock_sent_feedback.call_args_list == expected_calls
 
-# @pytest.mark.django_db
-# def periodic_retry_dispatch_task_connection_error():
+@pytest.mark.django_db
+def test_periodic_retry_dispatch_task_connection_error():
 
-#     with patch(
-#         "apps.core.tasks.find_feedback_ids_for_retry",
-#         return_value=[10, 20, 30]
-#     ) as mock_find_ids:
+    with patch(
+        "apps.core.tasks.find_feedback_ids_for_retry",
+        return_value=[10, 20, 30]
+    ) as mock_find_ids:
 
-#         with patch(
-#             "apps.core.tasks.send_feedback_notification_task.delay",
+        redis_connection_error = ConnectionError("Redis connection Error")
 
-#         ) as mock_sent_feedback:
+        with patch(
+            "apps.core.tasks.send_feedback_notification_task.delay",
+            side_effect=[
+                True,
+                redis_connection_error,
+                False
+            ]
+        ) as mock_sent_feedback:
 
-#             assert periodic_retry_dispatch_task() == 3
+            with pytest.raises(ConnectionError, match="Redis connection Error"):
+                assert periodic_retry_dispatch_task() == 1
 
-#             assert mock_sent_feedback.call_count == 3
-
-#             excepted_calls = [
-#                 call(10, kwargs="feedback_id"),
-#                 call(20, kwargs="feedback_id"),
-#                 call(30, kwargs="feedback_id")
-#             ]
-
-#             mock_find_ids.assert_has_calls(excepted_calls)
+            assert mock_sent_feedback.call_count == 2

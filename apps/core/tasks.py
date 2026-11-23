@@ -289,14 +289,13 @@ def periodic_retry_dispatch_task():
 
     feedback_ids = find_feedback_ids_for_retry()
 
-    success_tasks_count = 0
+    accepted_tasks_count = 0
 
     for feedback_id in feedback_ids:
 
         result = send_feedback_notification_task.delay(feedback_id)
 
-        if result: success_tasks_count += 1
+        if result: accepted_tasks_count += 1
 
-    return success_tasks_count
-
+    return accepted_tasks_count
 

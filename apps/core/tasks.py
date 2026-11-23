@@ -151,7 +151,7 @@ def send_feedback_notification_task(
         feedback = Feedback.objects.get(id=feedback_id)
 
     except Feedback.DoesNotExist:
-        return f"Заявка {feedback_id} не найдена в базе"
+        return False
 
     contacts = Contacts.get_solo()
 
@@ -176,15 +176,6 @@ def send_feedback_notification_task(
             fail_silently=False
         )
 
-        if (send_result == 0):
-            check_unsuccessful_sent_attempt(
-                feedback_id=feedback.id,
-                processing_token=token,
-                error="Send email error"
-            )
-
-            return False
-
     except SMTPException as e:
         check_unsuccessful_sent_attempt(
             feedback_id=feedback.id,
@@ -198,6 +189,15 @@ def send_feedback_notification_task(
             processing_token=token,
             error=str(e)
         )
+        return False
+
+    if (send_result == 0):
+        check_unsuccessful_sent_attempt(
+            feedback_id=feedback.id,
+            processing_token=token,
+            error="Send email error"
+        )
+
         return False
 
     result = mark_feedback_as_sent(
@@ -274,7 +274,7 @@ def periodic_processing_task():
 
 def find_feedback_ids_for_retry():
 
-    feedbacks = (Feedback.objects
+    feedbacks_ids = (Feedback.objects
                  .filter(status=Feedback.Status.PENDING)
                  .filter(next_retry_at__lte=timezone.now())
                  .filter(started_attempts_count__lt=5)
@@ -282,5 +282,21 @@ def find_feedback_ids_for_retry():
                  .values_list("id", flat=True)[:100]
                 )    
 
-    return list(feedbacks)
+    return list(feedbacks_ids)
+
+@shared_task()
+def periodic_retry_dispatch_task():
+
+    feedback_ids = find_feedback_ids_for_retry()
+
+    success_tasks_count = 0
+
+    for feedback_id in feedback_ids:
+
+        result = send_feedback_notification_task.delay(feedback_id)
+
+        if result: success_tasks_count += 1
+
+    return success_tasks_count
+
 

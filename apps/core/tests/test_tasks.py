@@ -7,7 +7,8 @@ from apps.core.tasks import (
     find_stuck_feedback_ids,
     periodic_processing_task,
     find_feedback_ids_for_retry,
-    send_feedback_notification_task
+    send_feedback_notification_task,
+    periodic_retry_dispatch_task
 )
 from apps.core.models import Feedback
 from django.utils import timezone
@@ -18,7 +19,7 @@ from django.db import transaction, close_old_connections, connections
 import queue
 from copy import copy
 from django.db import OperationalError
-from unittest.mock import patch, Mock
+from unittest.mock import patch, call
 from smtplib import SMTPException
 
 @pytest.fixture
@@ -1020,4 +1021,51 @@ def test_send_feedback_notification_task_op_error(
                 mock_check_unsuccessful_sent_attempt.assert_not_called()
                 mock_send_mail.assert_called_once()
 
-            
+@pytest.mark.django_db
+def test_periodic_retry_dispatch_task():
+
+    with patch(
+        "apps.core.tasks.find_feedback_ids_for_retry",
+        return_value=[10, 20, 30]
+    ) as mock_find_ids:
+
+        with patch(
+            "apps.core.tasks.send_feedback_notification_task.delay",
+        ) as mock_sent_feedback:
+
+            assert periodic_retry_dispatch_task() == 3
+
+            assert mock_sent_feedback.call_count == 3
+
+            expected_calls = [
+                call(10),
+                call(20),
+                call(30)
+            ]
+
+            mock_sent_feedback.assert_has_calls(expected_calls)
+
+# @pytest.mark.django_db
+# def periodic_retry_dispatch_task_connection_error():
+
+#     with patch(
+#         "apps.core.tasks.find_feedback_ids_for_retry",
+#         return_value=[10, 20, 30]
+#     ) as mock_find_ids:
+
+#         with patch(
+#             "apps.core.tasks.send_feedback_notification_task.delay",
+
+#         ) as mock_sent_feedback:
+
+#             assert periodic_retry_dispatch_task() == 3
+
+#             assert mock_sent_feedback.call_count == 3
+
+#             excepted_calls = [
+#                 call(10, kwargs="feedback_id"),
+#                 call(20, kwargs="feedback_id"),
+#                 call(30, kwargs="feedback_id")
+#             ]
+
+#             mock_find_ids.assert_has_calls(excepted_calls)

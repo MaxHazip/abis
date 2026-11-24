@@ -1069,4 +1069,45 @@ def test_periodic_retry_dispatch_task_connection_error():
                 periodic_retry_dispatch_task()
 
             assert mock_sent_feedback.call_count == 2
-            assert 30 not in mock_sent_feedback.call_args_list
+            assert mock_sent_feedback.call_args_list == [
+                call(10),
+                call(20)
+            ]
+
+@pytest.mark.django_db
+def test_whole_send(
+    feedback: Feedback
+):
+
+    smtp_error = SMTPException("Ошибка SMTP")
+
+    with patch(
+        "apps.core.tasks.send_mail",
+        side_effect=[smtp_error]
+    ):
+        
+        assert not send_feedback_notification_task(feedback_id=feedback.id)
+
+        feedback.refresh_from_db()
+
+        assert feedback.status == Feedback.Status.PENDING
+        assert feedback.started_attempts_count == 1
+
+
+    feedback.next_retry_at = timezone.now() - timedelta(minutes=10)
+    feedback.save()
+
+    with patch(
+        "apps.core.tasks.send_mail",
+    ):
+
+        assert periodic_retry_dispatch_task() == 1
+
+        feedback.refresh_from_db()
+
+        print(feedback)
+
+        assert feedback.status == Feedback.Status.SENT
+        assert feedback.started_attempts_count == 2
+        assert feedback.processing_expires_at is None
+        assert feedback.processing_token is None

@@ -1084,14 +1084,21 @@ def test_whole_send(
     with patch(
         "apps.core.tasks.send_mail",
         side_effect=[smtp_error]
-    ):
-        
+    ) as email_mock:
+
+        before_time = timezone.now() + timedelta(minutes=5)
+    
         assert not send_feedback_notification_task(feedback_id=feedback.id)
+
+        after_time = timezone.now() + timedelta(minutes=5)
 
         feedback.refresh_from_db()
 
+        assert feedback.next_retry_at > before_time
+        assert feedback.next_retry_at <= after_time
         assert feedback.status == Feedback.Status.PENDING
         assert feedback.started_attempts_count == 1
+        assert email_mock.call_count == 1
 
 
     feedback.next_retry_at = timezone.now() - timedelta(minutes=10)
@@ -1101,13 +1108,18 @@ def test_whole_send(
         "apps.core.tasks.send_mail",
     ):
 
-        assert periodic_retry_dispatch_task() == 1
+        feedback_ids = find_feedback_ids_for_retry()
+
+        assert feedback_ids == [feedback.id]
+
+        for feedback_id in feedback_ids:
+            send_feedback_notification_task(feedback_id=feedback_id)
 
         feedback.refresh_from_db()
-
-        print(feedback)
 
         assert feedback.status == Feedback.Status.SENT
         assert feedback.started_attempts_count == 2
         assert feedback.processing_expires_at is None
         assert feedback.processing_token is None
+
+    assert find_feedback_ids_for_retry() == []

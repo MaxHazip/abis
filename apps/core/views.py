@@ -5,6 +5,11 @@ from django.views.decorators.http import require_POST, require_GET
 from . import forms
 from django.shortcuts import render
 from apps.core.tasks import send_feedback_notification_task
+from redis.exceptions import ConnectionError
+from kombu.exceptions import OperationalError
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 # Create your views here.
@@ -34,15 +39,20 @@ def submit_form(request):
 
         feedback = form.save()
 
-        send_feedback_notification_task.delay(feedback.id)
+        try:
+        
+            send_feedback_notification_task.delay(feedback.id)
+        except (OperationalError, ConnectionError):
 
-        empty_form = forms.FeedbackForm()
-
-        return render(
-            request,
-            'includes/feedback_form_partial.html',
-            {
-                "form": empty_form,
-            })
+            logger.exception(f"Не удалось поставить задачу отправки уведомления в очередь (feedback_id={feedback.id})")
+        finally:
+            empty_form = forms.FeedbackForm()
+    
+            return render(
+                request,
+                'includes/feedback_form_partial.html',
+                {
+                    "form": empty_form,
+                })
     
     return render(request, "includes/feedback_form_partial.html", {"form": form})

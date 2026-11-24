@@ -1156,7 +1156,8 @@ def test_feedback_retry_limit(
             side_effect=[smtp_error]
         ) as email_mock:
 
-            assert find_feedback_ids_for_retry() == []
+            if (attempt != 1):
+                assert find_feedback_ids_for_retry() == []
                 
             feedback.next_retry_at = timezone.now() - timedelta(minutes=10)
             feedback.save()

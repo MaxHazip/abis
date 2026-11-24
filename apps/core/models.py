@@ -2,6 +2,7 @@ from django.db import models
 from django.db.models import Q
 from solo.models import SingletonModel
 from phonenumber_field.modelfields import PhoneNumberField
+from django.utils import timezone
 from django.core.validators import MaxValueValidator
 
 # Create your models here.
@@ -168,7 +169,7 @@ class Feedback(models.Model):
         verbose_name="Время следующей отправки при ошибке",
         null=True,
         blank=True,
-        auto_now_add=True
+        default=timezone.now
     )
     started_attempts_count = models.PositiveIntegerField(
         verbose_name="Количество начатых попыток отправки",

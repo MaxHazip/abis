@@ -1141,42 +1141,20 @@ def test_feedback_retry_limit(
 
     smtp_error = SMTPException("Ошибка SMTP")
 
-    with patch(
-        "apps.core.tasks.send_mail",
-        side_effect=[smtp_error]
-    ) as email_mock: 
+    retry_delays = [
+        timedelta(minutes=5),
+        timedelta(minutes=15),
+        timedelta(minutes=60),
+        timedelta(minutes=360),
+        None
+    ]
 
-        before_time = timezone.now() + timedelta(minutes=5)
-    
-        assert not send_feedback_notification_task(feedback_id=feedback.id)
-
-        after_time = timezone.now() + timedelta(minutes=5)
-
-        feedback.refresh_from_db()
-
-        assert feedback.next_retry_at > before_time
-        assert feedback.next_retry_at <= after_time
-        assert feedback.status == Feedback.Status.PENDING
-        assert feedback.started_attempts_count == 1
-        assert email_mock.call_count == 1
-
-    for i in range(2, 6):
+    for attempt, delay in enumerate(retry_delays, start=1):
 
         with patch(
             "apps.core.tasks.send_mail",
             side_effect=[smtp_error]
         ) as email_mock:
-            minutes = 0
-
-            match i:
-                case 2:
-                    minutes=15
-                case 3:
-                    minutes=60
-                case 4:
-                    minutes=360
-                case 5:
-                    minutes=None
 
             assert find_feedback_ids_for_retry() == []
                 
@@ -1192,31 +1170,48 @@ def test_feedback_retry_limit(
 
             for feedback_id in feedback_ids:
 
-                if minutes is not None: before_time = timezone.now() + timedelta(minutes=minutes)
+                if delay is not None: before_time = timezone.now() + delay
 
                 send_feedback_notification_task(feedback_id=feedback_id)
 
-                if minutes is not None: after_time = timezone.now() + timedelta(minutes=minutes)
+                if delay is not None: after_time = timezone.now() + delay
 
 
             feedback.refresh_from_db()
 
-            if (i < 5):
+            if (attempt < 5):
 
                 assert feedback.status == Feedback.Status.PENDING
-                assert feedback.started_attempts_count == i
+                assert feedback.started_attempts_count == attempt
                 assert email_mock.call_count == 1
                 assert feedback.next_retry_at > before_time
                 assert feedback.next_retry_at <= after_time
 
-            if (i == 5):
+            if (attempt == 5):
 
                 assert feedback.status == Feedback.Status.FAILED
                 assert feedback.started_attempts_count == 5
                 assert feedback.processing_token is None
                 assert feedback.processing_expires_at is None
                 assert feedback.next_retry_at is None
+                assert email_mock.call_count == 1
 
+
+    with patch(
+        "apps.core.tasks.send_mail",
+        side_effect=[smtp_error]
+    ) as email_mock: 
+    
+        assert not send_feedback_notification_task(feedback_id=feedback.id)
+
+        feedback.refresh_from_db()
+
+        assert feedback.status == Feedback.Status.FAILED
+        assert feedback.started_attempts_count == 5
+        assert feedback.processing_token is None
+        assert feedback.processing_expires_at is None
+        assert feedback.next_retry_at is None
+        assert email_mock.call_count == 0
 
     assert find_feedback_ids_for_retry() == []
         

@@ -167,7 +167,8 @@ class Feedback(models.Model):
     next_retry_at = models.DateTimeField(
         verbose_name="Время следующей отправки при ошибке",
         null=True,
-        blank=True
+        blank=True,
+        auto_now_add=True
     )
     started_attempts_count = models.PositiveIntegerField(
         verbose_name="Количество начатых попыток отправки",

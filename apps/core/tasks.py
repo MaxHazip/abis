@@ -88,8 +88,6 @@ def set_feedback_status_next_retry(
     feedback.processing_expires_at = None
     feedback.processing_token = None
 
-    
-
 def check_unsuccessful_sent_attempt(
     feedback_id: int,
     processing_token: uuid.UUID,

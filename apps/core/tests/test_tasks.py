@@ -1079,6 +1079,9 @@ def test_whole_send(
     feedback: Feedback
 ):
 
+    feedback.email = "test@example.com"
+    feedback.save()
+
     smtp_error = SMTPException("Ошибка SMTP")
 
     with patch(
@@ -1101,12 +1104,15 @@ def test_whole_send(
         assert email_mock.call_count == 1
 
 
+    assert find_feedback_ids_for_retry() == []
+
     feedback.next_retry_at = timezone.now() - timedelta(minutes=10)
     feedback.save()
 
     with patch(
         "apps.core.tasks.send_mail",
-    ):
+        return_value=1
+    ) as email_mock:
 
         feedback_ids = find_feedback_ids_for_retry()
 
@@ -1121,5 +1127,96 @@ def test_whole_send(
         assert feedback.started_attempts_count == 2
         assert feedback.processing_expires_at is None
         assert feedback.processing_token is None
+        assert email_mock.call_count == 2
 
     assert find_feedback_ids_for_retry() == []
+
+@pytest.mark.django_db
+def test_feedback_retry_limit(
+    feedback: Feedback
+):
+
+    feedback.email = "test@example.com"
+    feedback.save()
+
+    smtp_error = SMTPException("Ошибка SMTP")
+
+    with patch(
+        "apps.core.tasks.send_mail",
+        side_effect=[smtp_error]
+    ) as email_mock: 
+
+        before_time = timezone.now() + timedelta(minutes=5)
+    
+        assert not send_feedback_notification_task(feedback_id=feedback.id)
+
+        after_time = timezone.now() + timedelta(minutes=5)
+
+        feedback.refresh_from_db()
+
+        assert feedback.next_retry_at > before_time
+        assert feedback.next_retry_at <= after_time
+        assert feedback.status == Feedback.Status.PENDING
+        assert feedback.started_attempts_count == 1
+        assert email_mock.call_count == 1
+
+    for i in range(2, 6):
+
+        with patch(
+            "apps.core.tasks.send_mail",
+            side_effect=[smtp_error]
+        ) as email_mock:
+            minutes = 0
+
+            match i:
+                case 2:
+                    minutes=15
+                case 3:
+                    minutes=60
+                case 4:
+                    minutes=360
+                case 5:
+                    minutes=None
+
+            assert find_feedback_ids_for_retry() == []
+                
+            feedback.next_retry_at = timezone.now() - timedelta(minutes=10)
+            feedback.save()
+
+            before_time = 0
+            after_time = 0
+
+            feedback_ids = find_feedback_ids_for_retry()
+
+            assert feedback_ids == [feedback.id]
+
+            for feedback_id in feedback_ids:
+
+                if minutes is not None: before_time = timezone.now() + timedelta(minutes=minutes)
+
+                send_feedback_notification_task(feedback_id=feedback_id)
+
+                if minutes is not None: after_time = timezone.now() + timedelta(minutes=minutes)
+
+
+            feedback.refresh_from_db()
+
+            if (i < 5):
+
+                assert feedback.status == Feedback.Status.PENDING
+                assert feedback.started_attempts_count == i
+                assert email_mock.call_count == 1
+                assert feedback.next_retry_at > before_time
+                assert feedback.next_retry_at <= after_time
+
+            if (i == 5):
+
+                assert feedback.status == Feedback.Status.FAILED
+                assert feedback.started_attempts_count == 5
+                assert feedback.processing_token is None
+                assert feedback.processing_expires_at is None
+                assert feedback.next_retry_at is None
+
+
+    assert find_feedback_ids_for_retry() == []
+        

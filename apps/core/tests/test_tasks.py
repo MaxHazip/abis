@@ -22,6 +22,8 @@ from django.db import OperationalError
 from unittest.mock import patch, call
 from smtplib import SMTPException
 from redis.exceptions import ConnectionError
+from django.test import TestCase
+from kombu.exceptions import OperationalError as KombuOperationalError
 
 @pytest.fixture
 def feedback():
@@ -1215,4 +1217,56 @@ def test_feedback_retry_limit(
         assert email_mock.call_count == 0
 
     assert find_feedback_ids_for_retry() == []
+
+@pytest.mark.django_db
+def test_feedback_is_ready(
+    feedback: Feedback
+):
+
+    assert feedback.status == Feedback.Status.PENDING
+    assert feedback.next_retry_at is not None
+    assert feedback.started_attempts_count == 0
+    assert find_feedback_ids_for_retry() == [feedback.id]
+
+class PageTests(TestCase):
+
+    def test_submit_form(self):
+
+        with patch(
+            "apps.core.views.send_feedback_notification_task.delay",
+            side_effect=KombuOperationalError("Ошибка redis")
+        ) as mock_delay:
+        
+            feedback = {
+                "last_name": "Луков",
+                "first_name": "Михаил",
+                "phone_number": "+79233243254",
+                "privacy": True,
+            }
+
+
+            response = self.client.post("/feedback/", data=feedback)
+
+            self.assertEqual(Feedback.objects.count(), 1)
+
+            self.assertEqual(response.status_code, 200)
+
+            feedback_from_db = Feedback.objects.get(
+                phone_number=feedback["phone_number"]
+            )
+
+            self.assertEqual(feedback_from_db.status, Feedback.Status.PENDING)
+            self.assertEqual(feedback_from_db.started_attempts_count, 0)
+            self.assertIsNone(feedback_from_db.processing_token)
+            self.assertIsNone(feedback_from_db.processing_expires_at)
+            self.assertEqual(feedback_from_db.last_name, feedback["last_name"])
+            self.assertEqual(feedback_from_db.first_name, feedback["first_name"])
+
+            feedback_ids = find_feedback_ids_for_retry()
+
+            self.assertIn(feedback_from_db.id, feedback_ids)
+
+            mock_delay.assert_called_once_with(feedback_from_db.id)
+
+
         

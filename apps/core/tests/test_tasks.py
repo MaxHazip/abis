@@ -1268,48 +1268,41 @@ class PageTests(TestCase):
             self.assertIn(feedback_from_db.id, feedback_ids)
             mock_delay.assert_called_once_with(feedback_from_db.id)
 
-    @pytest.mark.django_db(transaction=True)
-    def test_feedback_dispatch_after_commit(
-        self
-    ):
+@pytest.mark.django_db(transaction=True)
+def test_feedback_dispatch_after_commit(
+    client
+):
+    with patch(
+        "apps.core.views.send_feedback_notification_task.delay",
+        
+    ) as mock_delay:
+        
+        with transaction.atomic():
+            feedback = {
+                "last_name": "Луков",
+                "first_name": "Михаил",
+                "phone_number": "+79233243254",
+                "privacy": True,
+            }
 
-        with patch(
-            "apps.core.views.send_feedback_notification_task.delay",
             
-        ) as mock_delay:
+            client.post("/feedback/", data=feedback)
+            assert Feedback.objects.count() == 1
+            mock_delay.assert_not_called()
 
-            with transaction.atomic():
-
-                feedback = {
-                    "last_name": "Луков",
-                    "first_name": "Михаил",
-                    "phone_number": "+79233243254",
-                    "privacy": True,
-                }
-    
-                with self.captureOnCommitCallbacks(execute=True) as callback:
-                
-                    response = self.client.post("/feedback/", data=feedback)
-
-                    self.assertEqual(Feedback.objects.count(), 1)
-
-                    self.assertEqual(len(callback), 0)
-
-            self.assertEqual(len(callback), 1)
-
-            feedback_db = Feedback.objects.get(phone_number=feedback["phone_number"])
-
-            mock_delay.assert_called_once_with(feedback_db.id)
+        feedback_db = Feedback.objects.get(phone_number=feedback["phone_number"])
+        mock_delay.assert_called_once_with(feedback_db.id)
 
 @pytest.mark.django_db(transaction=True)
 def test_feedback_dispatch_after_rollback(
-    self
+    client
 ):
-    with pytest.raises(RuntimeError):
+
+    with patch(
+        "apps.core.views.send_feedback_notification_task.delay",
+    ) as mock_delay:
         
-        with patch(
-            "apps.core.views.send_feedback_notification_task.delay",
-        ) as mock_delay:
+        with pytest.raises(RuntimeError):
             
             feedback = {
                 "last_name": "Луков",
@@ -1320,10 +1313,10 @@ def test_feedback_dispatch_after_rollback(
 
             with transaction.atomic():
             
-                self.client.post("/feedback/", data=feedback)
-                self.assertEqual(Feedback.objects.count(), 1)
+                client.post("/feedback/", data=feedback)
+                assert Feedback.objects.count() == 1
                 mock_delay.assert_not_called()
                 raise RuntimeError()
             
-            self.assertEqual(Feedback.objects.count(), 0)
-            mock_delay.assert_not_called()
+        assert Feedback.objects.count() == 0
+        mock_delay.assert_not_called()

@@ -32,7 +32,7 @@ class MainView(TemplateView):
 
         return context
 
-def send_feedback_in_transaction(
+def send_feedback_after_transaction(
     feedback_id: int
 ):
     try:
@@ -43,25 +43,26 @@ def send_feedback_in_transaction(
 @require_POST
 def submit_form(request):
 
-    with transaction.atomic():
     
-        form = forms.FeedbackForm(request.POST)
+    form = forms.FeedbackForm(request.POST)
 
-        if form.is_valid():
+    if form.is_valid():
+
+        with transaction.atomic():
 
             feedback = form.save()
-            
+
             transaction.on_commit(
-                partial(send_feedback_in_transaction, feedback.id)
+                partial(send_feedback_after_transaction, feedback.id)
             )
             
-            empty_form = forms.FeedbackForm()
+        empty_form = forms.FeedbackForm()
 
-            return render(
-                request,
-                'includes/feedback_form_partial.html',
-                {
-                    "form": empty_form,
-                })
-
-        return render(request, "includes/feedback_form_partial.html", {"form": form})
+        return render(
+            request,
+            'includes/feedback_form_partial.html',
+            {
+                "form": empty_form,
+            })
+    
+    return render(request, "includes/feedback_form_partial.html", {"form": form})

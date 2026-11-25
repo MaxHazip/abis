@@ -8,6 +8,8 @@ from apps.core.tasks import send_feedback_notification_task
 from redis.exceptions import ConnectionError
 from kombu.exceptions import OperationalError
 import logging
+from django.db import transaction
+from functools import partial
 
 logger = logging.getLogger(__name__)
 
@@ -30,29 +32,36 @@ class MainView(TemplateView):
 
         return context
 
+def send_feedback_in_transaction(
+    feedback_id: int
+):
+    try:
+        send_feedback_notification_task.delay(feedback_id)
+    except (OperationalError, ConnectionError):
+        logger.exception(f"Не удалось поставить задачу отправки уведомления в очередь (feedback_id={feedback_id})")
+
 @require_POST
 def submit_form(request):
+
+    with transaction.atomic():
     
-    form = forms.FeedbackForm(request.POST)
+        form = forms.FeedbackForm(request.POST)
 
-    if form.is_valid():
+        if form.is_valid():
 
-        feedback = form.save()
-
-        try:
-        
-            send_feedback_notification_task.delay(feedback.id)
-        except (OperationalError, ConnectionError):
-
-            logger.exception(f"Не удалось поставить задачу отправки уведомления в очередь (feedback_id={feedback.id})")
-        finally:
+            feedback = form.save()
+            
+            transaction.on_commit(
+                partial(send_feedback_in_transaction, feedback.id)
+            )
+            
             empty_form = forms.FeedbackForm()
-    
+
             return render(
                 request,
                 'includes/feedback_form_partial.html',
                 {
                     "form": empty_form,
                 })
-    
-    return render(request, "includes/feedback_form_partial.html", {"form": form})
+
+        return render(request, "includes/feedback_form_partial.html", {"form": form})

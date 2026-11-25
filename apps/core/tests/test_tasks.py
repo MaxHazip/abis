@@ -1244,8 +1244,11 @@ class PageTests(TestCase):
                 "privacy": True,
             }
 
+            with self.captureOnCommitCallbacks(execute=True) as callback:
 
-            response = self.client.post("/feedback/", data=feedback)
+                response = self.client.post("/feedback/", data=feedback)
+
+            self.assertEqual(len(callback), 1)
 
             self.assertEqual(Feedback.objects.count(), 1)
 
@@ -1261,12 +1264,6 @@ class PageTests(TestCase):
             self.assertIsNone(feedback_from_db.processing_expires_at)
             self.assertEqual(feedback_from_db.last_name, feedback["last_name"])
             self.assertEqual(feedback_from_db.first_name, feedback["first_name"])
-
             feedback_ids = find_feedback_ids_for_retry()
-
             self.assertIn(feedback_from_db.id, feedback_ids)
-
             mock_delay.assert_called_once_with(feedback_from_db.id)
-
-
-        

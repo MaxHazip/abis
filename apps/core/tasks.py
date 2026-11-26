@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.db import transaction, OperationalError
 import uuid
 from smtplib import SMTPException
+from celery.exceptions import SoftTimeLimitExceeded
 
 def catch_bid(
     feedback_id: int
@@ -129,7 +130,7 @@ def task_recovery(
 
         return True
 
-@shared_task()
+@shared_task(soft_time_limit=90, time_limit=120)
 def send_feedback_notification_task(
     feedback_id
 ):
@@ -174,20 +175,14 @@ def send_feedback_notification_task(
             fail_silently=False
         )
 
-    except SMTPException as e:
+    except (SMTPException, OSError, SoftTimeLimitExceeded) as e:
         check_unsuccessful_sent_attempt(
             feedback_id=feedback.id,
             processing_token=token,
             error=str(e)
         )
         return False
-    except OSError as e:
-        check_unsuccessful_sent_attempt(
-            feedback_id=feedback.id,
-            processing_token=token,
-            error=str(e)
-        )
-        return False
+
 
     if (send_result == 0):
         check_unsuccessful_sent_attempt(

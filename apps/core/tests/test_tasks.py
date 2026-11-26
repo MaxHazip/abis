@@ -24,6 +24,7 @@ from smtplib import SMTPException
 from redis.exceptions import ConnectionError
 from django.test import TestCase
 from kombu.exceptions import OperationalError as KombuOperationalError
+from celery.exceptions import SoftTimeLimitExceeded
 
 @pytest.fixture
 def feedback():
@@ -1320,3 +1321,30 @@ def test_feedback_dispatch_after_rollback(
             
         assert Feedback.objects.count() == 0
         mock_delay.assert_not_called()
+
+@pytest.mark.django_db
+def test_send_feedback_notification_task_soft_time_limit(
+    feedback: Feedback
+):
+
+
+    
+    with patch(
+        "apps.core.tasks.send_mail",
+        side_effect=SoftTimeLimitExceeded("Задача задерживается")
+    ):
+
+        before_time = timezone.now() + timedelta(minutes=5)
+
+        assert not send_feedback_notification_task(feedback_id=feedback.id)
+
+        after_time = timezone.now() + timedelta(minutes=5)
+
+        feedback.refresh_from_db()
+
+        assert feedback.status == Feedback.Status.PENDING
+        assert feedback.started_attempts_count == 1
+        assert feedback.next_retry_at > before_time
+        assert feedback.next_retry_at <= after_time
+        assert feedback.processing_expires_at is None
+        assert feedback.processing_token is None

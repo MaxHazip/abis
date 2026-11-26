@@ -8,6 +8,9 @@ from django.db import transaction, OperationalError
 import uuid
 from smtplib import SMTPException
 from celery.exceptions import SoftTimeLimitExceeded
+from celery.utils.log import get_task_logger
+
+logger = get_task_logger(__name__)
 
 def catch_bid(
     feedback_id: int
@@ -81,10 +84,22 @@ def set_feedback_status_next_retry(
                 feedback.next_retry_at = timezone.now() + timedelta(hours=1)
             case 4:
                 feedback.next_retry_at = timezone.now() + timedelta(hours=6)
+
+        logger.info(
+            "A retry has been scheduled for feedback %s. At %s. Attempts %s",
+            feedback.id,
+            feedback.next_retry_at,
+            feedback.started_attempts_count
+        )
     else:
         
         feedback.status = Feedback.Status.FAILED
         feedback.next_retry_at = None
+
+        logger.error(
+            "For feedback %s, the attempt limit has been reached.",
+            feedback.id
+        )
 
     feedback.processing_expires_at = None
     feedback.processing_token = None
@@ -138,7 +153,18 @@ def send_feedback_notification_task(
     try: 
         token = catch_bid(feedback_id=feedback_id)
 
+        logger.info(
+            "Feedback %s catched",
+            feedback_id
+        )
+
         if token is None:
+
+            logger.debug(
+                "Capture request %s rejected",
+                feedback_id
+            )   
+
             return False
 
     except Feedback.DoesNotExist:
@@ -175,12 +201,22 @@ def send_feedback_notification_task(
             fail_silently=False
         )
 
+        logger.info(
+            "Feedback %s sent successful",
+            feedback_id
+        )
+
     except (SMTPException, OSError, SoftTimeLimitExceeded) as e:
         check_unsuccessful_sent_attempt(
             feedback_id=feedback.id,
             processing_token=token,
             error=str(e)
         )
+
+        logger.warning(
+            str(e)
+        )
+
         return False
 
 
@@ -219,7 +255,11 @@ def send_feedback_notification_task(
                 fail_silently=True
             )
         except Exception:
-            pass
+
+            logger.warning(
+                "Error sending client email via feedback %s",
+                feedback_id
+            )
 
         return f"Письма по заявке #{feedback_id} успешно обработаны"
 
@@ -252,6 +292,11 @@ def periodic_processing_task():
                 )
             ):
                 succesfull_tasks_count += 1
+
+                logger.warning(
+                    "The stalled feedback %s has been restored",
+                    task_id
+                )
         except OperationalError as e:
             pgcode = getattr(e.__cause__, 'pgcode', None) or getattr(e.__cause__, 'sqlstate', None)
 

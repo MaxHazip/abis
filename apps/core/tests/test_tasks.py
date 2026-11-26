@@ -1332,7 +1332,7 @@ def test_send_feedback_notification_task_soft_time_limit(
     with patch(
         "apps.core.tasks.send_mail",
         side_effect=SoftTimeLimitExceeded("Задача задерживается")
-    ):
+    ) as mock_mail:
 
         before_time = timezone.now() + timedelta(minutes=5)
 
@@ -1348,3 +1348,5 @@ def test_send_feedback_notification_task_soft_time_limit(
         assert feedback.next_retry_at <= after_time
         assert feedback.processing_expires_at is None
         assert feedback.processing_token is None
+        assert feedback.last_error == "SoftTimeLimitExceeded('Задача задерживается',)"
+        mock_mail.assert_called_once()

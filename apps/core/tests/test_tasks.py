@@ -8,7 +8,8 @@ from apps.core.tasks import (
     periodic_processing_task,
     find_feedback_ids_for_retry,
     send_feedback_notification_task,
-    periodic_retry_dispatch_task
+    periodic_retry_dispatch_task,
+    logger
 )
 from apps.core.models import Feedback
 from django.utils import timezone
@@ -1350,3 +1351,33 @@ def test_send_feedback_notification_task_soft_time_limit(
         assert feedback.processing_token is None
         assert feedback.last_error == "SoftTimeLimitExceeded('Задача задерживается',)"
         mock_mail.assert_called_once()
+
+@pytest.mark.django_db
+def test_send_feedback_notification_task_client_email_error(
+    caplog,
+    feedback: Feedback
+):
+
+    feedback.email = "test@example.com"
+    feedback.save()
+
+    with patch(
+        "apps.core.tasks.send_mail",
+        side_effect=[
+            1,
+            SMTPException("Client email error")
+        ]
+    ) as mock_email:
+
+        send_feedback_notification_task(feedback_id=feedback.id)
+
+        feedback.refresh_from_db()
+
+        assert feedback.status == Feedback.Status.SENT
+        assert feedback.started_attempts_count == 1
+        assert feedback.processing_token is None
+        assert feedback.processing_expires_at is None
+        assert mock_email.call_count == 2
+        assert feedback.next_retry_at is None
+        assert "Client email error" in caplog.text
+

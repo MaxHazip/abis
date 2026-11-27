@@ -30,11 +30,22 @@ def catch_bid(
             feedback.processing_expires_at = timezone.now() + timedelta(minutes=5)
             feedback.processing_token = uuid.uuid4()
             feedback.save()
+
+            logger.info(
+                "Feedback %s catched",
+                feedback_id
+            )
+
             return feedback.processing_token
 
     except OperationalError as e:
 
             pgcode = getattr(e.__cause__, 'pgcode', None)
+
+            logger.debug(
+                "Capture request %s rejected",
+                feedback_id
+            )   
 
             if pgcode == '55P03':
                 return None
@@ -62,7 +73,13 @@ def mark_feedback_as_sent(
         feedback.status = Feedback.Status.SENT
         feedback.processing_token = None
         feedback.processing_expires_at = None
+        feedback.next_retry_at = None
         feedback.save()
+
+        logger.info(
+            "Feedback %s successful mark as sent",
+            feedback_id
+        )
         
         return True
 
@@ -143,6 +160,11 @@ def task_recovery(
 
         feedback.save()
 
+        logger.warning(
+            "The stalled feedback %s has been restored",
+            feedback_id
+        )
+
         return True
 
 @shared_task(soft_time_limit=90, time_limit=120)
@@ -153,18 +175,7 @@ def send_feedback_notification_task(
     try: 
         token = catch_bid(feedback_id=feedback_id)
 
-        logger.info(
-            "Feedback %s catched",
-            feedback_id
-        )
-
         if token is None:
-
-            logger.debug(
-                "Capture request %s rejected",
-                feedback_id
-            )   
-
             return False
 
     except Feedback.DoesNotExist:
@@ -227,6 +238,11 @@ def send_feedback_notification_task(
             error="Send email error"
         )
 
+        logger.warning(
+            "Mail for feedback %s not sent to admin",
+            feedback_id
+        )
+
         return False
 
     result = mark_feedback_as_sent(
@@ -247,18 +263,25 @@ def send_feedback_notification_task(
         )
 
         try: 
-            send_mail(
+            mails = send_mail(
                 subject=subject_client,
                 message=message_client,
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[feedback.email],
                 fail_silently=True
             )
-        except Exception:
+
+            if mails == 0:
+
+                logger.warning(
+                    "Mail for feedback %s not sent to client",
+                    feedback_id
+                )
+
+        except (SMTPException, OSError, SoftTimeLimitExceeded) as e:
 
             logger.warning(
-                "Error sending client email via feedback %s",
-                feedback_id
+                str(e)
             )
 
         return f"Письма по заявке #{feedback_id} успешно обработаны"
@@ -293,10 +316,7 @@ def periodic_processing_task():
             ):
                 succesfull_tasks_count += 1
 
-                logger.warning(
-                    "The stalled feedback %s has been restored",
-                    task_id
-                )
+                
         except OperationalError as e:
             pgcode = getattr(e.__cause__, 'pgcode', None) or getattr(e.__cause__, 'sqlstate', None)
 
@@ -307,6 +327,10 @@ def periodic_processing_task():
         except Feedback.DoesNotExist:
             continue
 
+    logger.info(
+        "Succesfull restored tasks %s",
+        succesfull_tasks_count
+    )
 
     return succesfull_tasks_count
 
@@ -334,6 +358,11 @@ def periodic_retry_dispatch_task():
         send_feedback_notification_task.delay(feedback_id)
 
         accepted_tasks_count += 1
+
+    logger.info(
+        "Accepted feedbacks %s",
+        accepted_tasks_count
+    )
 
     return accepted_tasks_count
 

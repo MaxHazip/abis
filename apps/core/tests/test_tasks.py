@@ -26,6 +26,7 @@ from redis.exceptions import ConnectionError
 from django.test import TestCase
 from kombu.exceptions import OperationalError as KombuOperationalError
 from celery.exceptions import SoftTimeLimitExceeded
+import logging
 
 @pytest.fixture
 def feedback():
@@ -1380,4 +1381,10 @@ def test_send_feedback_notification_task_client_email_error(
         assert mock_email.call_count == 2
         assert feedback.next_retry_at is None
         assert "Client email error" in caplog.text
+
+        assert any(
+            record.levelno == logging.WARNING
+            and "Client email error" in record.getMessage()
+            for record in caplog.records
+        )
 

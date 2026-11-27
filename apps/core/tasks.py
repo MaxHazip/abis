@@ -24,14 +24,22 @@ def catch_bid(
                 or (feedback.next_retry_at and timezone.now() < feedback.next_retry_at) 
                 or feedback.started_attempts_count >= 5
             ):
+
+                logger.debug(
+                    "Capture request %s rejected",
+                    feedback_id
+                ) 
+                
                 return None
+            
             feedback.status = Feedback.Status.PROCESSING
             feedback.started_attempts_count += 1
             feedback.processing_expires_at = timezone.now() + timedelta(minutes=5)
             feedback.processing_token = uuid.uuid4()
             feedback.save()
 
-            logger.info(
+            transaction.on_commit(
+                logger.info,
                 "Feedback %s catched",
                 feedback_id
             )
@@ -42,14 +50,22 @@ def catch_bid(
 
             pgcode = getattr(e.__cause__, 'pgcode', None)
 
-            logger.debug(
-                "Capture request %s rejected",
-                feedback_id
-            )   
-
             if pgcode == '55P03':
+
+                logger.debug(
+                    "Capture request %s rejected",
+                    feedback_id
+                )   
+
                 return None
             else:
+
+                logger.error(
+                    "Capture request %s rejected: %s",
+                    feedback_id,
+                    type(e).__name__
+                )
+
                 raise
 
     except Feedback.DoesNotExist:
@@ -76,11 +92,12 @@ def mark_feedback_as_sent(
         feedback.next_retry_at = None
         feedback.save()
 
-        logger.info(
+        transaction.on_commit(
+            logger.info,
             "Feedback %s successful mark as sent",
             feedback_id
         )
-        
+
         return True
 
 def set_feedback_status_next_retry(
@@ -102,21 +119,10 @@ def set_feedback_status_next_retry(
             case 4:
                 feedback.next_retry_at = timezone.now() + timedelta(hours=6)
 
-        logger.info(
-            "A retry has been scheduled for feedback %s. At %s. Attempts %s",
-            feedback.id,
-            feedback.next_retry_at,
-            feedback.started_attempts_count
-        )
     else:
         
         feedback.status = Feedback.Status.FAILED
         feedback.next_retry_at = None
-
-        logger.error(
-            "For feedback %s, the attempt limit has been reached.",
-            feedback.id
-        )
 
     feedback.processing_expires_at = None
     feedback.processing_token = None
@@ -139,6 +145,20 @@ def check_unsuccessful_sent_attempt(
 
         feedback.save()
 
+        if (feedback.status == Feedback.Status.PENDING):
+            logger.info(
+                "A retry has been scheduled for feedback %s. At %s. Attempts %s",
+                feedback.id,
+                feedback.next_retry_at,
+                feedback.started_attempts_count
+            )
+        else:
+            logger.error(
+                "For feedback %s, the attempt limit has been reached.",
+                feedback.id
+            )
+            
+
         return True
     
 def task_recovery(
@@ -160,7 +180,8 @@ def task_recovery(
 
         feedback.save()
 
-        logger.warning(
+        transaction.on_commit(
+            logger.warning,
             "The stalled feedback %s has been restored",
             feedback_id
         )
@@ -212,11 +233,6 @@ def send_feedback_notification_task(
             fail_silently=False
         )
 
-        logger.info(
-            "Feedback %s sent successful",
-            feedback_id
-        )
-
     except (SMTPException, OSError, SoftTimeLimitExceeded) as e:
         check_unsuccessful_sent_attempt(
             feedback_id=feedback.id,
@@ -225,7 +241,9 @@ def send_feedback_notification_task(
         )
 
         logger.warning(
-            str(e)
+            "Admin email failed for feedback %s: %s",
+            feedback_id,
+            type(e).__name__
         )
 
         return False
@@ -253,38 +271,46 @@ def send_feedback_notification_task(
     if not result:
         return False
 
-    if feedback.email:
+    if not feedback.email:
+        return True
 
-        subject_client = f"Ваше обращение принято!"
-        message_client = (
-            f"Здравствуйте!\n\n"
-            f"Спасибо за обращение. Мы получили ваше сообщение и свяжемся с вами в ближайшее время.\n\n"
-            f"С уважением,\nКоманда Abis"
+    subject_client = f"Ваше обращение принято!"
+    message_client = (
+        f"Здравствуйте!\n\n"
+        f"Спасибо за обращение. Мы получили ваше сообщение и свяжемся с вами в ближайшее время.\n\n"
+        f"С уважением,\nКоманда Abis"
+    )
+
+    try: 
+
+        mails = send_mail(
+            subject=subject_client,
+            message=message_client,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[feedback.email],
+            fail_silently=False
         )
 
-        try: 
-            mails = send_mail(
-                subject=subject_client,
-                message=message_client,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[feedback.email],
-                fail_silently=True
-            )
-
-            if mails == 0:
-
-                logger.warning(
-                    "Mail for feedback %s not sent to client",
-                    feedback_id
-                )
-
-        except (SMTPException, OSError, SoftTimeLimitExceeded) as e:
+        if mails == 0:
 
             logger.warning(
-                str(e)
+                "Mail for feedback %s not sent to client",
+                feedback_id
             )
 
-        return f"Письма по заявке #{feedback_id} успешно обработаны"
+            return True
+    
+    except (SMTPException, OSError, SoftTimeLimitExceeded) as e:
+        logger.warning(
+            "Client email failed for feedback %s: %s",
+            feedback_id,
+            type(e).__name__
+        )
+
+        return True
+    
+    if mails != 0:
+        return True
 
     
 

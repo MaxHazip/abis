@@ -9,6 +9,7 @@ import uuid
 from smtplib import SMTPException
 from celery.exceptions import SoftTimeLimitExceeded
 from celery.utils.log import get_task_logger
+from functools import partial
 
 logger = get_task_logger(__name__)
 
@@ -25,10 +26,13 @@ def catch_bid(
                 or feedback.started_attempts_count >= 5
             ):
 
-                logger.debug(
-                    "Capture request %s rejected",
-                    feedback_id
-                ) 
+                transaction.on_commit(
+                    partial(
+                        logger.debug,
+                        "Capture request %s rejected",
+                        feedback_id
+                    )
+                )
                 
                 return None
             
@@ -39,9 +43,11 @@ def catch_bid(
             feedback.save()
 
             transaction.on_commit(
-                logger.info,
-                "Feedback %s catched",
-                feedback_id
+                partial(
+                    logger.info,
+                    "Feedback %s catched",
+                    feedback_id
+                )
             )
 
             return feedback.processing_token
@@ -93,9 +99,11 @@ def mark_feedback_as_sent(
         feedback.save()
 
         transaction.on_commit(
-            logger.info,
-            "Feedback %s successful mark as sent",
-            feedback_id
+            partial(
+                logger.info,
+                "Feedback %s successful mark as sent",
+                feedback_id
+            )
         )
 
         return True
@@ -146,16 +154,23 @@ def check_unsuccessful_sent_attempt(
         feedback.save()
 
         if (feedback.status == Feedback.Status.PENDING):
-            logger.info(
-                "A retry has been scheduled for feedback %s. At %s. Attempts %s",
-                feedback.id,
-                feedback.next_retry_at,
-                feedback.started_attempts_count
+            transaction.on_commit(
+                partial(
+                    logger.info,
+                    "A retry has been scheduled for feedback %s. At %s. Attempts %s",
+                    feedback.id,
+                    feedback.next_retry_at,
+                    feedback.started_attempts_count    
+                )
             )
         else:
-            logger.error(
-                "For feedback %s, the attempt limit has been reached.",
-                feedback.id
+
+            transaction.on_commit(
+                partial(
+                    logger.error,
+                    "For feedback %s, the attempt limit has been reached.",
+                    feedback.id
+                )
             )
             
 
@@ -181,9 +196,11 @@ def task_recovery(
         feedback.save()
 
         transaction.on_commit(
-            logger.warning,
-            "The stalled feedback %s has been restored",
-            feedback_id
+            partial(
+                logger.warning,
+                "The stalled feedback %s has been restored",
+                feedback_id
+            )
         )
 
         return True

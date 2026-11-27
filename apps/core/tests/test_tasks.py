@@ -1380,11 +1380,57 @@ def test_send_feedback_notification_task_client_email_error(
         assert feedback.processing_expires_at is None
         assert mock_email.call_count == 2
         assert feedback.next_retry_at is None
-        assert "Client email error" in caplog.text
+
+        assert mock_email.call_args_list[1].kwargs["fail_silently"] is False
 
         assert any(
             record.levelno == logging.WARNING
-            and "Client email error" in record.getMessage()
+            and "Client email failed" in record.getMessage()
             for record in caplog.records
         )
 
+@pytest.mark.django_db(transaction=True)
+def test_capture_log_after_rollback(
+    caplog,
+    feedback: Feedback
+):
+    with pytest.raises(OperationalError):
+
+        with transaction.atomic():
+        
+            catch_bid(feedback_id=feedback.id)
+    
+            feedback.refresh_from_db()
+    
+            assert feedback.status == Feedback.Status.PROCESSING
+    
+            raise OperationalError("Some trouble")
+
+    feedback.refresh_from_db()
+
+    assert feedback.status == Feedback.Status.PENDING
+    assert feedback.started_attempts_count == 0
+
+    assert all(
+        record.levelno == logging.INFO
+        and f"Feedback {feedback.id} catched" not in record.getMessage()
+        for record in caplog.records
+    )
+
+@pytest.mark.django_db(transaction=True)
+def test_capture_log_after_succes(
+    caplog,
+    feedback: Feedback
+):
+
+    with transaction.atomic():
+    
+        catch_bid(feedback_id=feedback.id)
+
+    feedback.refresh_from_db()
+
+    assert all(
+        record.levelno == logging.INFO
+        and f"Feedback {feedback.id} catched" in record.getMessage()
+        for record in caplog.records
+    )
